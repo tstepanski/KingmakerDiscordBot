@@ -1,0 +1,22 @@
+﻿name: "InstallKingmakerBot"
+description: "Installs Kingmaker Discord Bot from S3"
+schemaVersion: 1.0
+
+phases:
+  build:
+    commands:
+      - dnf install -y unzip aws-cli
+      - aws s3 cp s3://{{ BUCKET }}/Application-{{ VERSION }}.zip /tmp/Application.zip
+      - unzip /tmp/Application.zip -d /usr/local/bin/kingmaker-discord-bot
+      - chmod +x /usr/local/bin/kingmaker-discord-bot/Application
+      - |
+        cat <<EOF > /etc/systemd/system/kingmaker-discord-bot.service
+        [Unit]
+        Description=Kingmaker Discord Bot
+        [Service]
+        ExecStart=/usr/local/bin/kingmaker-discord-bot/Application
+        Restart=always
+        [Install]
+        WantedBy=multi-user.target
+        EOF
+      - systemctl enable kingmaker-discord-bot

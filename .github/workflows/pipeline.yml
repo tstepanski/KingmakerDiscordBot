@@ -1,0 +1,152 @@
+﻿name: "Pipeline"
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  build:
+    name: "Build ${{ matrix.project }}"
+    runs-on: "ubuntu-latest"
+
+    defaults:
+      run:
+        shell: "pwsh"
+        working-directory: "${{ matrix.project }}"
+
+    strategy:
+      matrix:
+        include:
+          - project: "Application"
+            runtime: "linux-arm64"
+          - project: "CDK"
+            runtime: "linux-x64"
+
+    steps:
+      - name: "Checkout Source"
+        uses: "actions/checkout@v4"
+
+      - name: "Setup Dotnet"
+        uses: "actions/setup-dotnet@v4"
+        with:
+          cache: "true"
+          cache-dependency-path: "${{ matrix.project }}/packages.lock.json"
+          dotnet-quality: "ga"
+          dotnet-version: "9.x"
+
+      - name: "Test"
+        run: "dotnet test"
+
+      - name: "Build"
+        run: "dotnet publish --configuration Release --output '../dist' --runtime ${{ matrix.runtime }} --self-contained true"
+
+      - name: "Zip"
+        run: "zip -r ../${{ matrix.project }}.zip ."
+        working-directory: "dist"
+
+      - name: "Upload"
+        uses: "actions/upload-artifact@v4"
+        with:
+          if-no-files-found: "error"
+          name: "${{ matrix.project }}"
+          path: "${{ matrix.project }}.zip"
+          retention-days: 2
+
+  deploy:
+    name: "Deploy"
+    runs-on: "ubuntu-latest"
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    defaults:
+      run:
+        shell: "pwsh"
+
+    steps:
+      - name: "Declare Variables"
+        run: |
+          echo "VERSION=0.${{ github.run_id }}.${{ github.run_attempt }}" >> $env:GITHUB_ENV;
+          echo "CONSTRUCT_NAME=kingmaker-discord-bot" >> $env:GITHUB_ENV;
+          echo "DISTRIBUTION_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:distribution-configuration/default" >> $env:GITHUB_ENV;
+          echo "INFRASTRUCTURE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:infrastructure-configuration/default" >> $env:GITHUB_ENV;
+          echo "PIPELINE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-pipeline/kingmaker-discord-bot" >> $env:GITHUB_ENV;
+          echo "RECIPE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-recipe/kingmaker-discord-bot/${{ env.VERSION }}" >> $env:GITHUB_ENV;
+
+      - name: "Download"
+        uses: "actions/download-artifact@v4"
+
+      - name: "Login"
+        uses: "aws-actions/configure-aws-credentials@v4"
+        with:
+          aws-access-key-id: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws-region: "${{ secrets.AWS_REGION }}"
+          aws-secret-access-key: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
+      - name: "Determine If Image Bucket Exists"
+        run: |
+          try {
+            aws s3api head-bucket --bucket ${{ secrets.IMAGE_BUCKET_NAME }} | Out-Null;
+            echo "IMAGE_BUCKET_EXISTS=true" >> $env:GITHUB_ENV;
+          } catch {
+            echo "IMAGE_BUCKET_EXISTS=false" >> $env:GITHUB_ENV;
+          };
+
+      - name: "Create Image Bucket"
+        if: env.IMAGE_BUCKET_EXISTS == 'false'
+        run: "aws s3api create-bucket --bucket ${{ secrets.IMAGE_BUCKET_NAME }} --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}"
+
+      - name: "Upload Application"
+        run: "aws s3 cp Application.zip s3://${{ secrets.IMAGE_BUCKET_NAME }}/Application-${{ env.VERSION }}.zip"
+
+      - name: "Create Component"
+        run: "aws imagebuilder create-component --name ${{ env.CONSTRUCT_NAME }} --semantic-version ${{ env.VERSION }} --platform Linux --data file://CDK/install-bot.yml"
+
+      - name: "Create Image Recipe"
+        run: "aws imagebuilder create-image-recipe --name ${{ env.CONSTRUCT_NAME }} --version ${{ env.VERSION }} --components '[{\"componentArn\":\"arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:component/${{ env.CONSTRUCT_NAME }}/${{ env.VERSION }}\"}]' --parent-image \"${{ secrets.AWS_LINUX_AMI }}\" --block-device-mappings '[{\"deviceName\":\"/dev/xvda\",\"ebs\":{\"volumeSize\":8}}]' --semantic-version ${{ env.VERSION }} --platform Linux"
+
+      - name: "Determine If Image Pipeline Exists"
+        run: |
+          try {
+            aws imagebuilder get-image-pipeline --image-pipeline-arn $env:PIPELINE_ARN | Out-Null;
+            
+            echo "IMAGE_PIPELINE_EXISTS=true" >> $env:GITHUB_ENV;
+          } catch {
+            echo "IMAGE_PIPELINE_EXISTS=false" >> $env:GITHUB_ENV;
+          };
+
+      - name: "Create Image Pipeline"
+        if: env.IMAGE_PIPELINE_EXISTS == 'false'
+        run: "aws imagebuilder create-image-pipeline --name ${{ env.CONSTRUCT_NAME }} --image-recipe-arn ${{ env.RECIPE_ARN }} --infrastructure-configuration-arn ${{ env.INFRASTRUCTURE_ARN }} --distribution-configuration-arn ${{ env.DISTRIBUTION_ARN }} --image-tests-configuration '{\"imageTestsEnabled\": false}'"
+
+      - name: "Update Image Pipeline"
+        if: env.IMAGE_PIPELINE_EXISTS == 'true'
+        run: "aws imagebuilder update-image-pipeline --image-pipeline-arn ${{ env.PIPELINE_ARN }} --image-recipe-arn ${{ env.RECIPE_ARN }} --infrastructure-configuration-arn ${{ env.INFRASTRUCTURE_ARN }} --distribution-configuration-arn ${{ env.DISTRIBUTION_ARN }} --image-tests-configuration '{\"imageTestsEnabled\": false}'"
+
+      - name: "Start Image Pipeline"
+        run: "aws imagebuilder start-image-pipeline-execution --image-pipeline-arn ${{ env.PIPELINE_ARN }}"
+
+      - name: "Prune Old Components and Recipes"
+        run: |
+          $components = aws imagebuilder list-components --owner Self 
+            --query "componentVersionList[?name=='${{ env.CONSTRUCT_NAME }}'].[componentVersionArn, version]" `
+            --output json | ConvertFrom-Json | Sort-Object { [version]($_[1]) } -Descending | Select-Object -Skip 2;
+
+          $components | ForEach-Object {
+            aws imagebuilder delete-component --component-build-version-arn $_[0];
+          };
+
+          $recipes = aws imagebuilder list-image-recipes --owner Self `
+            --query "imageRecipeSummaryList[?name=='${{ env.CONSTRUCT_NAME }}'].[arn, version]" `
+            --output json | ConvertFrom-Json | Sort-Object { [version]($_[1]) } -Descending | Select-Object -Skip 2;
+
+          $recipes | ForEach-Object {
+            aws imagebuilder delete-image-recipe --image-recipe-arn $_[0];
+          };
+          
+      - name: "Get AMI ID"
+        run: |
+          $amiId = aws ec2 describe-images --owners self --filters "Name=name,Values=${{ env.CONSTRUCT_NAME }}-*" `
+            --query "Images | sort_by(@, &CreationDate) | [-1].ImageId -output text";
+          
+          echo "AMI_ID=$amiId" >> $env:GITHUB_ENV;
