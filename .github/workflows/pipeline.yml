@@ -59,7 +59,6 @@ jobs:
     defaults:
       run:
         shell: "pwsh"
-        working-directory: "CDK"
     
     permissions:
       id-token: write
@@ -105,8 +104,7 @@ jobs:
         run: "aws s3api create-bucket --bucket ${{ secrets.IMAGE_BUCKET_NAME }} --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}"
         
       - name: "Zip Application"
-        run: "zip -r ../CDK/Application.zip ."
-        working-directory: "Application"
+        run: "zip -r ../Application.zip ."
         
       - name: "Upload Application"
         run: "aws s3 cp Application.zip s3://${{ secrets.IMAGE_BUCKET_NAME }}/Application-${{ env.VERSION }}.zip"
@@ -167,9 +165,12 @@ jobs:
 
       - name: "Synthesize"
         run: "cdk synth --app='CDK/CDK' -c AMI_ID=''${{ env.AMI_ID }}'' -c AWS_REGION=''${{ secrets.AWS_REGION }}'' -c DEV_IP=''${{ secrets.DEV_IP }}'' -c VPC_CIDR=''${{ secrets.VPC_CIDR }}''"
+        working-directory: "CDK"
 
       - name: "Compare"
         run: "cdk diff --app='cdk.out'"
+        working-directory: "CDK"
 
       - name: "Deploy"
         run: "cdk deploy --app='cdk.out' --progress events --require-approval never"
+        working-directory: "CDK"
