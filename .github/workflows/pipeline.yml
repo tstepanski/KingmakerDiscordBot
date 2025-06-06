@@ -42,16 +42,12 @@ jobs:
       - name: "Build"
         run: "dotnet publish --configuration Release --output '../dist' --runtime ${{ matrix.runtime }} --self-contained true"
 
-      - name: "Zip"
-        run: "zip -r ../${{ matrix.project }}.zip ."
-        working-directory: "dist"
-
       - name: "Upload"
         uses: "actions/upload-artifact@v4"
         with:
           if-no-files-found: "error"
           name: "${{ matrix.project }}"
-          path: "${{ matrix.project }}.zip"
+          path: "dist"
           retention-days: 2
 
   deploy:
@@ -63,6 +59,7 @@ jobs:
     defaults:
       run:
         shell: "pwsh"
+        working-directory: "CDK"
     
     permissions:
       id-token: write
@@ -106,7 +103,11 @@ jobs:
       - name: "Create Image Bucket"
         if: env.IMAGE_BUCKET_EXISTS == 'false'
         run: "aws s3api create-bucket --bucket ${{ secrets.IMAGE_BUCKET_NAME }} --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}"
-
+        
+      - name: "Zip Application"
+        run: "zip -r ../CDK/Application.zip ."
+        working-directory: "Application"
+        
       - name: "Upload Application"
         run: "aws s3 cp Application.zip s3://${{ secrets.IMAGE_BUCKET_NAME }}/Application-${{ env.VERSION }}.zip"
 
