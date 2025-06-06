@@ -71,12 +71,12 @@ jobs:
     steps:
       - name: "Declare Variables"
         run: |
-          echo "VERSION=0.${{ github.run_id }}.${{ github.run_attempt }}" >> $env:GITHUB_ENV;
-          echo "CONSTRUCT_NAME=kingmaker-discord-bot" >> $env:GITHUB_ENV;
-          echo "DISTRIBUTION_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:distribution-configuration/default" >> $env:GITHUB_ENV;
-          echo "INFRASTRUCTURE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:infrastructure-configuration/default" >> $env:GITHUB_ENV;
-          echo "PIPELINE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-pipeline/kingmaker-discord-bot" >> $env:GITHUB_ENV;
-          echo "RECIPE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-recipe/kingmaker-discord-bot/${{ env.VERSION }}" >> $env:GITHUB_ENV;
+          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=0.${{ github.run_id }}.${{ github.run_attempt }}";
+          Add-Content -Path $env:GITHUB_ENV -Value "CONSTRUCT_NAME=kingmaker-discord-bot";
+          Add-Content -Path $env:GITHUB_ENV -Value "DISTRIBUTION_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:distribution-configuration/default";
+          Add-Content -Path $env:GITHUB_ENV -Value "INFRASTRUCTURE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:infrastructure-configuration/default";
+          Add-Content -Path $env:GITHUB_ENV -Value "PIPELINE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-pipeline/kingmaker-discord-bot";
+          Add-Content -Path $env:GITHUB_ENV -Value "RECIPE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-recipe/kingmaker-discord-bot/${{ env.VERSION }}";
 
       - name: "Install CDK"
         run: "npm install aws-cdk"
