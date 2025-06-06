@@ -105,6 +105,7 @@ jobs:
         
       - name: "Zip Application"
         run: "zip -r ../Application.zip ."
+        working-directory: "Application"
         
       - name: "Upload Application"
         run: "aws s3 cp Application.zip s3://${{ secrets.IMAGE_BUCKET_NAME }}/Application-${{ env.VERSION }}.zip"
