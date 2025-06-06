@@ -55,13 +55,18 @@ jobs:
           retention-days: 2
 
   deploy:
-    name: "Deploy"
-    runs-on: "ubuntu-latest"
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: "Deploy"
+    needs: build
+    runs-on: "ubuntu-latest"
 
     defaults:
       run:
         shell: "pwsh"
+    
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: "Declare Variables"
@@ -72,6 +77,9 @@ jobs:
           echo "INFRASTRUCTURE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:infrastructure-configuration/default" >> $env:GITHUB_ENV;
           echo "PIPELINE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-pipeline/kingmaker-discord-bot" >> $env:GITHUB_ENV;
           echo "RECIPE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-recipe/kingmaker-discord-bot/${{ env.VERSION }}" >> $env:GITHUB_ENV;
+      
+      - name: "Install CDK"
+        run: "npm install aws-cdk"
 
       - name: "Download"
         uses: "actions/download-artifact@v4"
@@ -79,9 +87,9 @@ jobs:
       - name: "Login"
         uses: "aws-actions/configure-aws-credentials@v4"
         with:
-          aws-access-key-id: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          audience: "sts.amazonaws.com"
           aws-region: "${{ secrets.AWS_REGION }}"
-          aws-secret-access-key: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          role-to-assume: "${{ secrets.AWS_ROLE_TO_ASSUME }}"
 
       - name: "Determine If Image Bucket Exists"
         run: |
@@ -150,3 +158,12 @@ jobs:
             --query "Images | sort_by(@, &CreationDate) | [-1].ImageId -output text";
           
           echo "AMI_ID=$amiId" >> $env:GITHUB_ENV;
+      
+      - name: "Synthesize"
+        run: "cdk synth --app='CDK/CDK' -c AMI_ID=''${{ env.AMI_ID }}'' -c AWS_REGION=''${{ secrets.AWS_REGION }}'' -c DEV_IP=''${{ secrets.DEV_IP }}'' -c VPC_CIDR=''${{ secrets.VPC_CIDR }}''"
+      
+      - name: "Compare"
+        run: "cdk diff --app='cdk.out'"
+      
+      - name: "Deploy"
+        run: "cdk deploy --app='cdk.out' --progress events --require-approval never"
