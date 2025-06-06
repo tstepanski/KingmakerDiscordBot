@@ -100,6 +100,8 @@ jobs:
           } else {
             Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_BUCKET_EXISTS=false";
           }
+          
+          exit 0;
 
       - name: "Create Image Bucket"
         if: env.IMAGE_BUCKET_EXISTS == 'false'
@@ -123,6 +125,8 @@ jobs:
           } catch {
             Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_BUCKET_EXISTS=false";
           };
+          
+          exit 0;
 
       - name: "Create Image Pipeline"
         if: env.IMAGE_PIPELINE_EXISTS == 'false'
