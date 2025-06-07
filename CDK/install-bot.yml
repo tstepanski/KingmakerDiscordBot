@@ -3,20 +3,44 @@ description: "Installs Kingmaker Discord Bot from S3"
 schemaVersion: 1.0
 
 phases:
-  build:
-    commands:
-      - dnf install -y unzip aws-cli
-      - aws s3 cp s3://{{ BUCKET }}/Application-{{ VERSION }}.zip /tmp/Application.zip
-      - unzip /tmp/Application.zip -d /usr/local/bin/kingmaker-discord-bot
-      - chmod +x /usr/local/bin/kingmaker-discord-bot/Application
-      - |
-        cat <<EOF > /etc/systemd/system/kingmaker-discord-bot.service
-        [Unit]
-        Description=Kingmaker Discord Bot
-        [Service]
-        ExecStart=/usr/local/bin/kingmaker-discord-bot/Application
-        Restart=always
-        [Install]
-        WantedBy=multi-user.target
-        EOF
-      - systemctl enable kingmaker-discord-bot
+  - name: "build"
+    steps:
+      - name: "Create Application Directory"
+        action: "CreateFolder"
+        inputs:
+          - path: "/opt/kingmaker-discord-bot"
+
+      - name: "Download Application"
+        action: "S3Download"
+        inputs:
+          - source: "s3://{{ BUCKET }}/{{ VERSION }}/*"
+            destination: "/opt/kingmaker-discord-bot"
+
+      - name: "Set Executable Permissions"
+        action: "SetFilePermissions"
+        inputs:
+          - path: "/opt/kingmaker-discord-bot/Application"
+            permissions: "700"
+
+      - name: "Register Systemd Service"
+        action: "CreateFile"
+        inputs:
+          - path: "/etc/systemd/system/kingmaker-discord-bot.service"
+            content: |
+              [Unit]
+              Description=Kingmaker Discord Bot
+              
+              [Service]
+              ExecStart=/opt/kingmaker-discord-bot/Application
+              Restart=always
+              
+              [Install]
+              WantedBy=multi-user.target
+
+      - name: "Enable Systemd Service"
+        action: "ExecuteBash"
+        inputs:
+          commands:
+            - "systemctl daemon-reload"
+            - "systemctl enable kingmaker-discord-bot"
+            - "systemctl start kingmaker-discord-bot"
