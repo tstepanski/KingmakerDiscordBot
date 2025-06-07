@@ -103,7 +103,7 @@ jobs:
         run: "aws s3api create-bucket --bucket ${{ secrets.IMAGE_BUCKET_NAME }} --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}"
         
       - name: "Zip Application"
-        run: "zip -r ../Application.zip ."
+        run: "zip -rq ../Application.zip ."
         working-directory: "Application"
         
       - name: "Upload Application"
