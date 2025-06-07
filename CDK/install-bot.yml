@@ -5,24 +5,24 @@ schemaVersion: 1.0
 phases:
   - name: "build"
     steps:
-      - name: "Create Application Directory"
+      - name: "CreateApplicationDirectory"
         action: "CreateFolder"
         inputs:
           - path: "/opt/kingmaker-discord-bot"
 
-      - name: "Download Application"
+      - name: "DownloadApplication"
         action: "S3Download"
         inputs:
           - source: "s3://{{ BUCKET }}/{{ VERSION }}/*"
             destination: "/opt/kingmaker-discord-bot"
 
-      - name: "Set Executable Permissions"
+      - name: "SetExecutablePermissions"
         action: "SetFilePermissions"
         inputs:
           - path: "/opt/kingmaker-discord-bot/Application"
             permissions: "700"
 
-      - name: "Register Systemd Service"
+      - name: "RegisterSystemdService"
         action: "CreateFile"
         inputs:
           - path: "/etc/systemd/system/kingmaker-discord-bot.service"
@@ -37,7 +37,7 @@ phases:
               [Install]
               WantedBy=multi-user.target
 
-      - name: "Enable Systemd Service"
+      - name: "EnableSystemdService"
         action: "ExecuteBash"
         inputs:
           commands:
