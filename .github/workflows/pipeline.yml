@@ -68,7 +68,6 @@ jobs:
       - name: "Declare Variables"
         run: |
           Add-Content -Path $env:GITHUB_ENV -Value "VERSION=0.${{ github.run_id }}.${{ github.run_attempt }}";
-          Add-Content -Path $env:GITHUB_ENV -Value "CONSTRUCT_NAME=${{ secrets.CONSTRUCT_NAME }}";
           Add-Content -Path $env:GITHUB_ENV -Value "DISTRIBUTION_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:distribution-configuration/default";
           Add-Content -Path $env:GITHUB_ENV -Value "INFRASTRUCTURE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:infrastructure-configuration/default";
           Add-Content -Path $env:GITHUB_ENV -Value "PIPELINE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-pipeline/${{ secrets.CONSTRUCT_NAME }}";
@@ -111,10 +110,11 @@ jobs:
         run: "aws s3 cp Application.zip s3://${{ secrets.IMAGE_BUCKET_NAME }}/Application-${{ env.VERSION }}.zip"
 
       - name: "Create Component"
-        run: "aws imagebuilder create-component --name ${{ env.CONSTRUCT_NAME }} --semantic-version ${{ env.VERSION }} --platform Linux --data file://CDK/install-bot.yml"
+        run: "aws imagebuilder create-component --name ${{ secrets.CONSTRUCT_NAME }} --semantic-version ${{ env.VERSION }} --platform Linux --data file://install-bot.yml"
+        working-directory: "CDK"
 
       - name: "Create Image Recipe"
-        run: "aws imagebuilder create-image-recipe --name ${{ env.CONSTRUCT_NAME }} --version ${{ env.VERSION }} --components '[{\"componentArn\":\"arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:component/${{ env.CONSTRUCT_NAME }}/${{ env.VERSION }}\"}]' --parent-image \"${{ secrets.AWS_LINUX_AMI }}\" --block-device-mappings '[{\"deviceName\":\"/dev/xvda\",\"ebs\":{\"volumeSize\":8}}]' --semantic-version ${{ env.VERSION }} --platform Linux"
+        run: "aws imagebuilder create-image-recipe --name ${{ secrets.CONSTRUCT_NAME }} --version ${{ env.VERSION }} --components '[{\"componentArn\":\"arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:component/${{ secrets.CONSTRUCT_NAME }}/${{ env.VERSION }}\"}]' --parent-image \"${{ secrets.AWS_LINUX_AMI }}\" --block-device-mappings '[{\"deviceName\":\"/dev/xvda\",\"ebs\":{\"volumeSize\":8}}]' --semantic-version ${{ env.VERSION }} --platform Linux"
 
       - name: "Determine If Image Pipeline Exists"
         run: |
@@ -130,7 +130,7 @@ jobs:
 
       - name: "Create Image Pipeline"
         if: env.IMAGE_PIPELINE_EXISTS == 'false'
-        run: "aws imagebuilder create-image-pipeline --name ${{ env.CONSTRUCT_NAME }} --image-recipe-arn ${{ env.RECIPE_ARN }} --infrastructure-configuration-arn ${{ env.INFRASTRUCTURE_ARN }} --distribution-configuration-arn ${{ env.DISTRIBUTION_ARN }} --image-tests-configuration '{\"imageTestsEnabled\": false}'"
+        run: "aws imagebuilder create-image-pipeline --name ${{ secrets.CONSTRUCT_NAME }} --image-recipe-arn ${{ env.RECIPE_ARN }} --infrastructure-configuration-arn ${{ env.INFRASTRUCTURE_ARN }} --distribution-configuration-arn ${{ env.DISTRIBUTION_ARN }} --image-tests-configuration '{\"imageTestsEnabled\": false}'"
 
       - name: "Update Image Pipeline"
         if: env.IMAGE_PIPELINE_EXISTS == 'true'
@@ -142,7 +142,7 @@ jobs:
       - name: "Prune Old Components and Recipes"
         run: |
           $components = aws imagebuilder list-components --owner Self 
-            --query "componentVersionList[?name=='${{ env.CONSTRUCT_NAME }}'].[componentVersionArn, version]" `
+            --query "componentVersionList[?name=='${{ secrets.CONSTRUCT_NAME }}'].[componentVersionArn, version]" `
             --output json | ConvertFrom-Json | Sort-Object { [version]($_[1]) } -Descending | Select-Object -Skip 2;
 
           $components | ForEach-Object {
@@ -150,7 +150,7 @@ jobs:
           };
 
           $recipes = aws imagebuilder list-image-recipes --owner Self `
-            --query "imageRecipeSummaryList[?name=='${{ env.CONSTRUCT_NAME }}'].[arn, version]" `
+            --query "imageRecipeSummaryList[?name=='${{ secrets.CONSTRUCT_NAME }}'].[arn, version]" `
             --output json | ConvertFrom-Json | Sort-Object { [version]($_[1]) } -Descending | Select-Object -Skip 2;
 
           $recipes | ForEach-Object {
@@ -159,7 +159,7 @@ jobs:
 
       - name: "Get AMI ID"
         run: |
-          $amiId = aws ec2 describe-images --owners self --filters "Name=name,Values=${{ env.CONSTRUCT_NAME }}-*" `
+          $amiId = aws ec2 describe-images --owners self --filters "Name=name,Values=${{ secrets.CONSTRUCT_NAME }}-*" `
             --query "Images | sort_by(@, &CreationDate) | [-1].ImageId -output text";
           
           Add-Content -Path $env:GITHUB_ENV -Value "AMI_ID=$amiId";
