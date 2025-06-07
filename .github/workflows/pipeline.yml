@@ -67,7 +67,7 @@ jobs:
     steps:
       - name: "Declare Variables"
         run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=0.${{ github.run_id }}.${{ github.run_attempt }}";
+          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=0.${{ github.run_number }}.${{ github.run_attempt }}";
           Add-Content -Path $env:GITHUB_ENV -Value "DISTRIBUTION_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:distribution-configuration/default";
           Add-Content -Path $env:GITHUB_ENV -Value "INFRASTRUCTURE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:infrastructure-configuration/default";
           Add-Content -Path $env:GITHUB_ENV -Value "PIPELINE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-pipeline/${{ secrets.CONSTRUCT_NAME }}";
