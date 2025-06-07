@@ -52,11 +52,11 @@ public sealed class BotStack : Stack
         {
             InstanceType = instanceType,
             LaunchTemplateName = BotName,
+            MachineImage = machineImage,
+            RequireImdsv2 = true,
             Role = role,
             SecurityGroup = securityGroup,
-            SpotOptions = spotOptions,
-            MachineImage = machineImage,
-            RequireImdsv2 = true
+            SpotOptions = spotOptions
         };
 
         return new LaunchTemplate(instance, nameof(LaunchTemplate), properties);
