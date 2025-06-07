@@ -88,7 +88,7 @@ jobs:
 
       - name: "Determine If Image Bucket Exists"
         run: |
-          aws s3api head-bucket --bucket ${{ secrets.IMAGE_BUCKET_NAME }} --region ${{ secrets.AWS_REGION }} 2>$null;
+          aws s3api head-bucket --bucket ${{ secrets.IMAGE_BUCKET_NAME }} 2>$null;
           
           if ($LASTEXITCODE -eq 0) {
             Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_BUCKET_EXISTS=true";
@@ -119,13 +119,13 @@ jobs:
 
       - name: "Determine If Image Pipeline Exists"
         run: |
-          try {
-            aws imagebuilder get-image-pipeline --image-pipeline-arn $env:PIPELINE_ARN | Out-Null;
+          aws imagebuilder get-image-pipeline --image-pipeline-arn $env:PIPELINE_ARN 2>$null;
           
-            Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_BUCKET_EXISTS=true";
-          } catch {
-            Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_BUCKET_EXISTS=false";
-          };
+          if ($LASTEXITCODE -eq 0) {
+            Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_PIPELINE_EXISTS=true";
+          } else {
+            Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_PIPELINE_EXISTS=false";
+          }
           
           exit 0;
 
