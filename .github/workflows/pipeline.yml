@@ -67,11 +67,13 @@ jobs:
     steps:
       - name: "Declare Variables"
         run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=0.${{ github.run_number }}.${{ github.run_attempt }}";
+          $version = "0.${{ github.run_number }}.${{ github.run_attempt }}";
+          
+          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=${version}";
           Add-Content -Path $env:GITHUB_ENV -Value "DISTRIBUTION_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:distribution-configuration/default";
           Add-Content -Path $env:GITHUB_ENV -Value "INFRASTRUCTURE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:infrastructure-configuration/default";
           Add-Content -Path $env:GITHUB_ENV -Value "PIPELINE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-pipeline/${{ secrets.CONSTRUCT_NAME }}";
-          Add-Content -Path $env:GITHUB_ENV -Value "RECIPE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-recipe/${{ secrets.CONSTRUCT_NAME }}/${{ env.VERSION }}";
+          Add-Content -Path $env:GITHUB_ENV -Value "RECIPE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-recipe/${{ secrets.CONSTRUCT_NAME }}/${version}";
 
       - name: "Install CDK"
         run: "npm install aws-cdk"
