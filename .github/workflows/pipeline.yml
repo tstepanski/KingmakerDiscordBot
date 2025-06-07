@@ -105,9 +105,13 @@ jobs:
       - name: "Upload Application"
         run: "aws s3 sync . s3://${{ secrets.IMAGE_BUCKET_NAME }}/${{ env.VERSION }}"
         working-directory: "Application"
+      
+      - name: "Replace Component Tokens"
+        run: "cat install-bot.yml | sed 's/{{ BUCKET }}/${{ secrets.IMAGE_BUCKET_NAME }}/g' | sed 's/{{ VERSION }}/${{ env.VERSION }}/g' > install-bot-ready.yml"
+        working-directory: "CDK"
 
       - name: "Create Component"
-        run: "aws imagebuilder create-component --name ${{ secrets.CONSTRUCT_NAME }} --semantic-version ${{ env.VERSION }} --platform Linux --data file://install-bot.yml"
+        run: "aws imagebuilder create-component --name ${{ secrets.CONSTRUCT_NAME }} --semantic-version ${{ env.VERSION }} --platform Linux --data file://install-bot-ready.yml"
         working-directory: "CDK"
 
       - name: "Create Image Recipe"
