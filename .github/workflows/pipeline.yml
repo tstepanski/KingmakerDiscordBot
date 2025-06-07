@@ -118,7 +118,7 @@ jobs:
         working-directory: "CDK"
 
       - name: "Create Image Recipe"
-        run: "aws imagebuilder create-image-recipe --name ${{ secrets.CONSTRUCT_NAME }} --version ${{ env.VERSION }} --components '[{\"componentArn\":\"${{ env.COMPONENT_ARN }}\"}]' --parent-image \"${{ secrets.AWS_LINUX_AMI }}\" --block-device-mappings '[{\"deviceName\":\"/dev/xvda\",\"ebs\":{\"volumeSize\":8}}]' --semantic-version ${{ env.VERSION }} --platform Linux"
+        run: "aws imagebuilder create-image-recipe --name ${{ secrets.CONSTRUCT_NAME }} --components '[{\"componentArn\":\"${{ env.COMPONENT_ARN }}\"}]' --parent-image \"${{ secrets.AWS_LINUX_AMI }}\" --block-device-mappings '[{\"deviceName\":\"/dev/xvda\",\"ebs\":{\"volumeSize\":8}}]' --semantic-version ${{ env.VERSION }} --platform Linux"
 
       - name: "Determine If Image Pipeline Exists"
         run: |
