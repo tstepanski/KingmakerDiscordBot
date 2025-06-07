@@ -102,12 +102,9 @@ jobs:
         if: env.IMAGE_BUCKET_EXISTS == 'false'
         run: "aws s3api create-bucket --bucket ${{ secrets.IMAGE_BUCKET_NAME }} --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}"
         
-      - name: "Zip Application"
-        run: "zip -rq ../Application.zip ."
-        working-directory: "Application"
-        
       - name: "Upload Application"
-        run: "aws s3 cp Application.zip s3://${{ secrets.IMAGE_BUCKET_NAME }}/Application-${{ env.VERSION }}.zip"
+        run: "aws s3 sync . s3://${{ secrets.IMAGE_BUCKET_NAME }}/${{ env.VERSION }}"
+        working-directory: "Application"
 
       - name: "Create Component"
         run: "aws imagebuilder create-component --name ${{ secrets.CONSTRUCT_NAME }} --semantic-version ${{ env.VERSION }} --platform Linux --data file://install-bot.yml"
