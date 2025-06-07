@@ -70,6 +70,7 @@ jobs:
           $version = "0.${{ github.run_number }}.${{ github.run_attempt }}";
           
           Add-Content -Path $env:GITHUB_ENV -Value "VERSION=${version}";
+          Add-Content -Path $env:GITHUB_ENV -Value "COMPONENT_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:component/${{ secrets.CONSTRUCT_NAME }}/${version}/1";
           Add-Content -Path $env:GITHUB_ENV -Value "DISTRIBUTION_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:distribution-configuration/default";
           Add-Content -Path $env:GITHUB_ENV -Value "INFRASTRUCTURE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:infrastructure-configuration/default";
           Add-Content -Path $env:GITHUB_ENV -Value "PIPELINE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-pipeline/${{ secrets.CONSTRUCT_NAME }}";
@@ -117,7 +118,7 @@ jobs:
         working-directory: "CDK"
 
       - name: "Create Image Recipe"
-        run: "aws imagebuilder create-image-recipe --name ${{ secrets.CONSTRUCT_NAME }} --version ${{ env.VERSION }} --components '[{\"componentArn\":\"arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:component/${{ secrets.CONSTRUCT_NAME }}/${{ env.VERSION }}\"}]' --parent-image \"${{ secrets.AWS_LINUX_AMI }}\" --block-device-mappings '[{\"deviceName\":\"/dev/xvda\",\"ebs\":{\"volumeSize\":8}}]' --semantic-version ${{ env.VERSION }} --platform Linux"
+        run: "aws imagebuilder create-image-recipe --name ${{ secrets.CONSTRUCT_NAME }} --version ${{ env.VERSION }} --components '[{\"componentArn\":\"${{ env.COMPONENT_ARN }}\"}]' --parent-image \"${{ secrets.AWS_LINUX_AMI }}\" --block-device-mappings '[{\"deviceName\":\"/dev/xvda\",\"ebs\":{\"volumeSize\":8}}]' --semantic-version ${{ env.VERSION }} --platform Linux"
 
       - name: "Determine If Image Pipeline Exists"
         run: |
