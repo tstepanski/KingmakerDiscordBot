@@ -111,8 +111,6 @@ internal sealed class BotStack : Stack
     private static Vpc CreateVpc(BotStack instance)
     {
         var cidr = instance.GetContextOrThrow(Constants.VirtualPrivateCloudClasslessInterDomainRoutingBlock);
-        
-        Console.WriteLine(cidr.Contains('/'));
 
         var subnetConfiguration = new SubnetConfiguration
         {
