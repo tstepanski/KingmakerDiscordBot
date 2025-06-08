@@ -43,7 +43,8 @@ internal sealed class BotStack : Stack
     private static string GetBase64EncodedUserData(IBucket bucket)
     {
         var location = Assembly.GetExecutingAssembly().Location;
-        var path = Path.Join(location, "user-data.yml");
+        var directory = Directory.GetParent(location);
+        var path = Path.Join(directory!.FullName, "user-data.yml");
         var userData = File.ReadAllText(path).Replace("{{ BUCKET }}", bucket.BucketName);
         
         return Fn.Base64(userData);
