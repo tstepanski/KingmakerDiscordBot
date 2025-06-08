@@ -8,7 +8,9 @@ public static class Program
     {
         var application = new App();
 
-        _ = new BotStack(application);
+        var applicationAssetsStack = new ApplicationAssetsStack(application);
+        
+        _ = new BotStack(application, applicationAssetsStack.Bucket);
 
         var synthesis = application.Synth();
 

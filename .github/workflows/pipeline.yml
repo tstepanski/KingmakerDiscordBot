@@ -65,17 +65,6 @@ jobs:
       contents: read
 
     steps:
-      - name: "Declare Variables"
-        run: |
-          $version = "0.${{ github.run_number }}.${{ github.run_attempt }}";
-          
-          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=${version}";
-          Add-Content -Path $env:GITHUB_ENV -Value "COMPONENT_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:component/${{ secrets.CONSTRUCT_NAME }}/${version}/1";
-          Add-Content -Path $env:GITHUB_ENV -Value "DISTRIBUTION_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:distribution-configuration/default";
-          Add-Content -Path $env:GITHUB_ENV -Value "INFRASTRUCTURE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:infrastructure-configuration/default";
-          Add-Content -Path $env:GITHUB_ENV -Value "PIPELINE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-pipeline/${{ secrets.CONSTRUCT_NAME }}";
-          Add-Content -Path $env:GITHUB_ENV -Value "RECIPE_ARN=arn:aws:imagebuilder:${{ secrets.AWS_REGION }}:${{ secrets.AWS_ACCOUNT_ID }}:image-recipe/${{ secrets.CONSTRUCT_NAME }}/${version}";
-
       - name: "Install CDK"
         run: "npm install aws-cdk"
 
@@ -89,87 +78,8 @@ jobs:
           aws-region: "${{ secrets.AWS_REGION }}"
           role-to-assume: "${{ secrets.AWS_ROLE_TO_ASSUME }}"
 
-      - name: "Determine If Image Bucket Exists"
-        run: |
-          aws s3api head-bucket --bucket ${{ secrets.IMAGE_BUCKET_NAME }} 2>$null;
-          
-          if ($LASTEXITCODE -eq 0) {
-            Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_BUCKET_EXISTS=true";
-          } else {
-            Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_BUCKET_EXISTS=false";
-          }
-          
-          exit 0;
-
-      - name: "Create Image Bucket"
-        if: env.IMAGE_BUCKET_EXISTS == 'false'
-        run: "aws s3api create-bucket --bucket ${{ secrets.IMAGE_BUCKET_NAME }} --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}"
-        
-      - name: "Upload Application"
-        run: "aws s3 sync . s3://${{ secrets.IMAGE_BUCKET_NAME }}/${{ env.VERSION }}"
-        working-directory: "Application"
-      
-      - name: "Replace Component Tokens"
-        run: "cat install-bot.yml | sed 's/{{ BUCKET }}/${{ secrets.IMAGE_BUCKET_NAME }}/g' | sed 's/{{ VERSION }}/${{ env.VERSION }}/g' > install-bot-ready.yml"
-        working-directory: "CDK"
-
-      - name: "Create Component"
-        run: "aws imagebuilder create-component --name ${{ secrets.CONSTRUCT_NAME }} --semantic-version ${{ env.VERSION }} --platform Linux --data file://install-bot-ready.yml"
-        working-directory: "CDK"
-
-      - name: "Create Image Recipe"
-        run: "aws imagebuilder create-image-recipe --name ${{ secrets.CONSTRUCT_NAME }} --components '[{\"componentArn\":\"${{ env.COMPONENT_ARN }}\"}]' --parent-image \"${{ secrets.AWS_LINUX_AMI }}\" --block-device-mappings '[{\"deviceName\":\"/dev/xvda\",\"ebs\":{\"volumeSize\":8}}]' --semantic-version ${{ env.VERSION }}"
-
-      - name: "Determine If Image Pipeline Exists"
-        run: |
-          aws imagebuilder get-image-pipeline --image-pipeline-arn $env:PIPELINE_ARN 2>$null;
-          
-          if ($LASTEXITCODE -eq 0) {
-            Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_PIPELINE_EXISTS=true";
-          } else {
-            Add-Content -Path $env:GITHUB_ENV -Value "IMAGE_PIPELINE_EXISTS=false";
-          }
-          
-          exit 0;
-
-      - name: "Create Image Pipeline"
-        if: env.IMAGE_PIPELINE_EXISTS == 'false'
-        run: "aws imagebuilder create-image-pipeline --name ${{ secrets.CONSTRUCT_NAME }} --image-recipe-arn ${{ env.RECIPE_ARN }} --infrastructure-configuration-arn ${{ env.INFRASTRUCTURE_ARN }} --distribution-configuration-arn ${{ env.DISTRIBUTION_ARN }} --image-tests-configuration '{\"imageTestsEnabled\": false}'"
-
-      - name: "Update Image Pipeline"
-        if: env.IMAGE_PIPELINE_EXISTS == 'true'
-        run: "aws imagebuilder update-image-pipeline --image-pipeline-arn ${{ env.PIPELINE_ARN }} --image-recipe-arn ${{ env.RECIPE_ARN }} --infrastructure-configuration-arn ${{ env.INFRASTRUCTURE_ARN }} --distribution-configuration-arn ${{ env.DISTRIBUTION_ARN }} --image-tests-configuration '{\"imageTestsEnabled\": false}'"
-
-      - name: "Start Image Pipeline"
-        run: "aws imagebuilder start-image-pipeline-execution --image-pipeline-arn ${{ env.PIPELINE_ARN }}"
-
-      - name: "Prune Old Components and Recipes"
-        run: |
-          $components = aws imagebuilder list-components --owner Self 
-            --query "componentVersionList[?name=='${{ secrets.CONSTRUCT_NAME }}'].[componentVersionArn, version]" `
-            --output json | ConvertFrom-Json | Sort-Object { [version]($_[1]) } -Descending | Select-Object -Skip 2;
-
-          $components | ForEach-Object {
-            aws imagebuilder delete-component --component-build-version-arn $_[0];
-          };
-
-          $recipes = aws imagebuilder list-image-recipes --owner Self `
-            --query "imageRecipeSummaryList[?name=='${{ secrets.CONSTRUCT_NAME }}'].[arn, version]" `
-            --output json | ConvertFrom-Json | Sort-Object { [version]($_[1]) } -Descending | Select-Object -Skip 2;
-
-          $recipes | ForEach-Object {
-            aws imagebuilder delete-image-recipe --image-recipe-arn $_[0];
-          };
-
-      - name: "Get AMI ID"
-        run: |
-          $amiId = aws ec2 describe-images --owners self --filters "Name=name,Values=${{ secrets.CONSTRUCT_NAME }}-*" `
-            --query "Images | sort_by(@, &CreationDate) | [-1].ImageId -output text";
-          
-          Add-Content -Path $env:GITHUB_ENV -Value "AMI_ID=$amiId";
-
       - name: "Synthesize"
-        run: "cdk synth --app='CDK/CDK' -c AMI_ID=''${{ env.AMI_ID }}'' -c AWS_REGION=''${{ secrets.AWS_REGION }}'' -c DEV_IP=''${{ secrets.DEV_IP }}'' -c VPC_CIDR=''${{ secrets.VPC_CIDR }}''"
+        run: "cdk synth --app='CDK/CDK' -c ARTIFACT_PATH='Application' -c AWS_LINUX_AMI_ID='${{ secrets.AWS_LINUX_AMI }}' -c DEV_IP='${{ secrets.DEV_IP }}' -c MAX_SPOT_PRICE='${{ secrets.MAX_SPOT_PRICE }}' -c VPC_CIDR='${{ secrets.VPC_CIDR }}'"
         working-directory: "CDK"
 
       - name: "Compare"

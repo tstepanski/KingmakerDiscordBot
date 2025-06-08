@@ -1,58 +1,71 @@
-﻿using Amazon.CDK;
+﻿using System.Reflection;
+using Amazon.CDK;
 using Amazon.CDK.AWS.EC2;
 using Amazon.CDK.AWS.IAM;
+using Amazon.CDK.AWS.S3;
 
 namespace KingmakerDiscordBot.CDK;
 
-public sealed class BotStack : Stack
+internal sealed class BotStack : Stack
 {
-    private const string BotName = "KingmakerDiscordBot";
-    
-    public BotStack(App application) : base(application, nameof(BotStack))
+    public BotStack(App application, IBucket bucket) : base(application, nameof(BotStack))
     {
         var vpc = CreateVpc(this);
         var securityGroup = CreateSecurityGroup(vpc);
-        var machineImage = GetMachineImage(this);
         var role = CreateRole(this);
-        var launchTemplate = CreateLaunchTemplate(this, machineImage, role, securityGroup);
+        var launchTemplate = CreateLaunchTemplate(this, role, securityGroup);
 
-        _ = CreateInstance(this, launchTemplate, vpc);
+        _ = CreateInstance(this, launchTemplate, vpc, bucket);
     }
 
-    private static CfnInstance CreateInstance(BotStack stack, LaunchTemplate launchTemplate, Vpc vpc)
+    private static CfnInstance CreateInstance(BotStack instance, LaunchTemplate launchTemplate, Vpc vpc, IBucket bucket)
     {
         var launchTemplateSpecificationProperty = new CfnInstance.LaunchTemplateSpecificationProperty
         {
             LaunchTemplateId = launchTemplate.LaunchTemplateId,
             Version = launchTemplate.LatestVersionNumber
         };
-        
+
+        var imageId = instance.GetContextOrThrow(Constants.ParentImageIdKey);
+        var userData = GetBase64EncodedUserData(bucket);
+
         var properties = new CfnInstanceProps
         {
+            ImageId = imageId,
             LaunchTemplate = launchTemplateSpecificationProperty,
-            SubnetId = vpc.PublicSubnets[0].SubnetId
+            SubnetId = vpc.PublicSubnets[0].SubnetId,
+            UserData = userData
         };
 
-        return new CfnInstance(stack, nameof(CfnInstance), properties);
+        return new CfnInstance(instance, nameof(CfnInstance), properties);
     }
 
-    private static LaunchTemplate CreateLaunchTemplate(BotStack instance, IMachineImage machineImage, Role role,
-        SecurityGroup securityGroup)
+    private static string GetBase64EncodedUserData(IBucket bucket)
+    {
+        var location = Assembly.GetExecutingAssembly().Location;
+        var path = Path.Join(location, "user-data.yml");
+        var userData = File.ReadAllText(path).Replace("{{ BUCKET }}", bucket.BucketName);
+        
+        return Fn.Base64(userData);
+    }
+
+    private static LaunchTemplate CreateLaunchTemplate(BotStack instance, Role role, SecurityGroup securityGroup)
     {
         var instanceType = InstanceType.Of(InstanceClass.T4G, InstanceSize.SMALL);
+        var maximumSpotPriceRaw = instance.GetContextOrThrow(Constants.MaximumSpotPriceKey);
+        var maximumSpotPriceParsed = double.Parse(maximumSpotPriceRaw);
 
         var spotOptions = new LaunchTemplateSpotOptions
         {
             InterruptionBehavior = SpotInstanceInterruption.TERMINATE,
-            MaxPrice = 0.02,
+            MaxPrice = maximumSpotPriceParsed,
             RequestType = SpotRequestType.ONE_TIME
         };
 
         var properties = new LaunchTemplateProps
         {
             InstanceType = instanceType,
-            LaunchTemplateName = BotName,
-            MachineImage = machineImage,
+            LaunchTemplateName = Constants.BotName,
             RequireImdsv2 = true,
             Role = role,
             SecurityGroup = securityGroup,
@@ -62,7 +75,7 @@ public sealed class BotStack : Stack
         return new LaunchTemplate(instance, nameof(LaunchTemplate), properties);
     }
 
-    private static Role CreateRole(BotStack stack)
+    private static Role CreateRole(BotStack instance)
     {
         var servicePrincipal = new ServicePrincipal("ec2.amazonaws.com");
         var instanceCorePolicy = ManagedPolicy.FromAwsManagedPolicyName("AmazonSSMManagedInstanceCore");
@@ -71,23 +84,10 @@ public sealed class BotStack : Stack
         {
             AssumedBy = servicePrincipal,
             ManagedPolicies = [instanceCorePolicy],
-            RoleName = BotName
+            RoleName = Constants.BotName
         };
 
-        return new Role(stack, nameof(Role), properties);
-    }
-
-    private static IMachineImage GetMachineImage(BotStack stack)
-    {
-        var region = stack.GetContextOrThrow("AWS_REGION");
-        var amiId = stack.GetContextOrThrow("AMI_ID");
-
-        var amiMap = new Dictionary<string, string>
-        {
-            { region, amiId }
-        };
-
-        return MachineImage.GenericLinux(amiMap);
+        return new Role(instance, nameof(Role), properties);
     }
 
     private static SecurityGroup CreateSecurityGroup(Vpc vpc)
@@ -96,7 +96,7 @@ public sealed class BotStack : Stack
         {
             AllowAllOutbound = true,
             Description = "Allow All Output, SSH In Only",
-            SecurityGroupName = BotName,
+            SecurityGroupName = Constants.BotName,
             Vpc = vpc
         };
 
@@ -108,9 +108,9 @@ public sealed class BotStack : Stack
         return securityGroup;
     }
 
-    private static Vpc CreateVpc(BotStack stack)
+    private static Vpc CreateVpc(BotStack instance)
     {
-        var cidr = stack.GetContextOrThrow("VPC_CIDR");
+        var cidr = instance.GetContextOrThrow(Constants.VirtualPrivateCloudClasslessInterDomainRoutingBlock);
 
         var subnetConfiguration = new SubnetConfiguration
         {
@@ -125,19 +125,9 @@ public sealed class BotStack : Stack
             MaxAzs = 1,
             NatGateways = 0,
             SubnetConfiguration = [subnetConfiguration],
-            VpcName = BotName,
+            VpcName = Constants.BotName,
         };
 
-        return new Vpc(stack, nameof(Vpc), properties);
-    }
-    
-    private string GetContextOrThrow(string key)
-    {
-        // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
-        var value = Node.TryGetContext(key)?.ToString();
-
-        ArgumentException.ThrowIfNullOrWhiteSpace(value, key);
-
-        return value;
+        return new Vpc(instance, nameof(Vpc), properties);
     }
 }

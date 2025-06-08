@@ -1,0 +1,23 @@
+﻿#cloud-config
+
+write_files:
+  - append: true
+    path: /etc/crontab
+    content: |
+      [Unit]
+      Description=Kingmaker Discord Bot
+      
+      [Service]
+      ExecStart=/opt/kingmaker-discord-bot/Application
+      Restart=always
+      
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - mkdir -p /opt/kingmaker-discord-bot
+  - aws s3 sync s3://{{ BUCKET }}/ /opt/kingmaker-discord-bot
+  - chmod 700 /opt/kingmaker-discord-bot/Application
+  - systemctl daemon-reload
+  - systemctl enable kingmaker-discord-bot
+  - systemctl start kingmaker-discord-bot
