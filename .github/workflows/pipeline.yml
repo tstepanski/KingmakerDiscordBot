@@ -91,5 +91,5 @@ jobs:
         working-directory: "CDK"
 
       - name: "Deploy"
-        run: "cdk deploy --app='cdk.out' --progress events --require-approval never"
+        run: "cdk deploy --all --app='cdk.out' --progress events --require-approval never"
         working-directory: "CDK"
