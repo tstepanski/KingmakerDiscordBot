@@ -79,7 +79,7 @@ jobs:
           role-to-assume: "${{ secrets.AWS_ROLE_TO_ASSUME }}"
 
       - name: "Synthesize"
-        run: "cdk synth --app='CDK/CDK' -c ARTIFACT_PATH='Distributable/Application' -c AWS_LINUX_AMI_ID='${{ secrets.AWS_LINUX_AMI }}' -c DEV_IP='${{ secrets.DEV_IP }}' -c MAX_SPOT_PRICE='${{ secrets.MAX_SPOT_PRICE }}' -c VPC_CIDR='${{ secrets.VPC_CIDR }}'"
+        run: "cdk synth --app='CDK' -c ARTIFACT_PATH='Distributable/Application' -c AWS_LINUX_AMI_ID='${{ secrets.AWS_LINUX_AMI }}' -c DEV_IP='${{ secrets.DEV_IP }}' -c MAX_SPOT_PRICE='${{ secrets.MAX_SPOT_PRICE }}' -c VPC_CIDR='${{ secrets.VPC_CIDR }}'"
         working-directory: "CDK"
 
       - name: "Compare"
