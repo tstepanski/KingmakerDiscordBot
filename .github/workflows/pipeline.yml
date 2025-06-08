@@ -8,21 +8,12 @@ on:
 
 jobs:
   build:
-    name: "Build ${{ matrix.project }}"
+    name: "Build"
     runs-on: "ubuntu-latest"
 
     defaults:
       run:
         shell: "pwsh"
-        working-directory: "${{ matrix.project }}"
-
-    strategy:
-      matrix:
-        include:
-          - project: "Application"
-            runtime: "linux-arm64"
-          - project: "CDK"
-            runtime: "linux-x64"
 
     steps:
       - name: "Checkout Source"
@@ -32,21 +23,28 @@ jobs:
         uses: "actions/setup-dotnet@v4"
         with:
           cache: "true"
-          cache-dependency-path: "${{ matrix.project }}/packages.lock.json"
+          cache-dependency-path: |
+            Application/packages.lock.json
+            CDK/packages.lock.json
           dotnet-quality: "ga"
           dotnet-version: "9.x"
 
       - name: "Test"
         run: "dotnet test"
 
-      - name: "Build"
-        run: "dotnet publish --configuration Release --output '../dist' --runtime ${{ matrix.runtime }} --self-contained true"
+      - name: "Publish Application"
+        run: "dotnet publish Application.csproj --configuration Release --output '../dist/Application' --runtime linux-arm64 --self-contained true"
+        working-directory: "Application"
+
+      - name: "Publish CDK"
+        run: "dotnet publish CDK.csproj --configuration Release --output '../dist/CDK' --runtime linux-x64 --self-contained true"
+        working-directory: "CDK"
 
       - name: "Upload"
         uses: "actions/upload-artifact@v4"
         with:
           if-no-files-found: "error"
-          name: "${{ matrix.project }}"
+          name: "Distributable"
           path: "dist"
           retention-days: 2
 
@@ -66,10 +64,12 @@ jobs:
 
     steps:
       - name: "Install CDK"
-        run: "npm install aws-cdk"
+        run: "npm install -g aws-cdk"
 
       - name: "Download"
         uses: "actions/download-artifact@v4"
+        with:
+          name: "Distributable"
 
       - name: "Login"
         uses: "aws-actions/configure-aws-credentials@v4"
@@ -79,13 +79,13 @@ jobs:
           role-to-assume: "${{ secrets.AWS_ROLE_TO_ASSUME }}"
 
       - name: "Synthesize"
-        run: "cdk synth --app='CDK/CDK' -c ARTIFACT_PATH='Application' -c AWS_LINUX_AMI_ID='${{ secrets.AWS_LINUX_AMI }}' -c DEV_IP='${{ secrets.DEV_IP }}' -c MAX_SPOT_PRICE='${{ secrets.MAX_SPOT_PRICE }}' -c VPC_CIDR='${{ secrets.VPC_CIDR }}'"
-        working-directory: "CDK"
+        run: "cdk synth --app='CDK/CDK' -c ARTIFACT_PATH='Distributable/Application' -c AWS_LINUX_AMI_ID='${{ secrets.AWS_LINUX_AMI }}' -c DEV_IP='${{ secrets.DEV_IP }}' -c MAX_SPOT_PRICE='${{ secrets.MAX_SPOT_PRICE }}' -c VPC_CIDR='${{ secrets.VPC_CIDR }}'"
+        working-directory: "Distributable/CDK"
 
       - name: "Compare"
         run: "cdk diff --app='cdk.out'"
-        working-directory: "CDK"
+        working-directory: "Distributable/CDK"
 
       - name: "Deploy"
         run: "cdk deploy --app='cdk.out' --progress events --require-approval never"
-        working-directory: "CDK"
+        working-directory: "Distributable/CDK"
