@@ -9,12 +9,12 @@ internal sealed class ApplicationAssetsStack : Stack
     public ApplicationAssetsStack(App application) : base(application, nameof(ApplicationAssetsStack))
     {
         Bucket = CreateBucket(this);
-        Deployment = CreateDeployment(this, Bucket);
+        //Deployment = CreateDeployment(this, Bucket);
     }
     
     public Bucket Bucket { get; }
     
-    public BucketDeployment Deployment { get; }
+    //public BucketDeployment Deployment { get; }
 
     private static Bucket CreateBucket(ApplicationAssetsStack stack)
     {

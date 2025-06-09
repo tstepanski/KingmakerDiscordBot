@@ -10,7 +10,7 @@ public static class Program
 
         var applicationAssetsStack = new ApplicationAssetsStack(application);
         
-        _ = new BotStack(application, applicationAssetsStack.Bucket);
+        //_ = new BotStack(application, applicationAssetsStack.Bucket);
 
         var synthesis = application.Synth();
 
