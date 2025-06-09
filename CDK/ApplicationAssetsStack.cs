@@ -39,6 +39,7 @@ internal sealed class ApplicationAssetsStack : Stack
         var deploymentProperties = new BucketDeploymentProps
         {
             DestinationBucket = bucket,
+            MemoryLimit = 512,
             Prune = true,
             Sources = [
                 applicationAsset
