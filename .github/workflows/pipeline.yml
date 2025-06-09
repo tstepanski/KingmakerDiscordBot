@@ -49,6 +49,7 @@ jobs:
           retention-days: 2
 
   deploy:
+    concurrency: "Deployment"
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: "Deploy"
     needs: build
