@@ -52,7 +52,7 @@ internal sealed partial class BotStack : Stack
 
     private static Alarm CreateHeartbeatAlarm(BotStack stack, CfnInstance instance)
     {
-        var name = $"{Constants.HeartbeatMetricName}-{instance.Ref}-{nameof(Alarm)}";
+        const string name = $"{Constants.HeartbeatMetricName}-{nameof(Alarm)}";
 
         var metricProperties = new MetricProps
         {
