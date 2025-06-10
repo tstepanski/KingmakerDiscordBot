@@ -238,6 +238,6 @@ internal sealed partial class BotStack : Stack
         return new Vpc(stack, nameof(Vpc), properties);
     }
 
-    [GeneratedRegex(@"{{\s*(.+)\s*}}", RegexOptions.Compiled)]
+    [GeneratedRegex(@"{{\s*([^\s]+)\s*}}", RegexOptions.Compiled)]
     private static partial Regex TokenRegexFactory();
 }
