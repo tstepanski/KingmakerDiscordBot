@@ -1,23 +1,32 @@
 ﻿#cloud-config
 
 write_files:
-  - append: true
-    path: /etc/crontab
+  - path: /etc/systemd/system/kingmaker-discord-bot.service
     content: |
       [Unit]
       Description=Kingmaker Discord Bot
+      After=network.target
       
       [Service]
       ExecStart=/opt/kingmaker-discord-bot/Application
       Restart=always
+      EnvironmentFile=/etc/profile.d/envvars.sh
       
       [Install]
       WantedBy=multi-user.target
+  
+  - path: /etc/profile.d/envvars.sh
+    content: |
+      export AWS__LOGGROUP={{ LOG_GROUP }};
+      export AWS__REGION={{ REGION }};
+      export CLOUDWATCH__HEARTBEATINTERVALINSECONDS={{ HEARTBEAT_INTERVAL_IN_SECONDS }};
+      export CLOUDWATCH__METRICNAME={{ HEARTBEAT_METRIC_NAME }};
+      export CLOUDWATCH__NAMESPACE={{ HEARTBEAT_NAMESPACE }};
 
 runcmd:
   - mkdir -p /opt/kingmaker-discord-bot
   - aws s3 sync s3://{{ BUCKET }}/ /opt/kingmaker-discord-bot
-  - chmod 700 /opt/kingmaker-discord-bot/Application
+  - chmod +x /opt/kingmaker-discord-bot/Application
   - systemctl daemon-reload
   - systemctl enable kingmaker-discord-bot
   - systemctl start kingmaker-discord-bot

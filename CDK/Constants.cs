@@ -3,6 +3,12 @@
 internal static class Constants
 {
     public const string ArtifactPathKey = "ARTIFACT_PATH";
+
+    public const int HeartbeatIntervalInSeconds = 60;
+
+    public const string HeartbeatMetricName = "StatusCheckFailed_Instance";
+
+    public const string HeartbeatNamespace = "AWS/EC2";
     
     public const string ParentImageIdKey = "AWS_LINUX_AMI_ID";
     

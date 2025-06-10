@@ -10,4 +10,13 @@
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="AWS.Logger.AspNetCore" Version="4.0.0" />
+      <PackageReference Include="AWSSDK.CloudWatch" Version="4.0.1.1" />
+      <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.1" />
+      <PackageReference Include="AWSXRayRecorder" Version="2.15.0" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.5" />
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.5" />
+    </ItemGroup>
+
 </Project>

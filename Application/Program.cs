@@ -1,37 +1,25 @@
-﻿using System.Runtime.Loader;
+﻿using KingmakerDiscordBot.Application.Configuration;
+using KingmakerDiscordBot.Application.General;
+using KingmakerDiscordBot.Application.Observability;
+using Microsoft.Extensions.Hosting;
 
 namespace KingmakerDiscordBot.Application;
 
 public static class Program
 {
-    public static async Task Main()
+    internal static IConfigurationFactory ConfigurationFactory = new ConfigurationFactory();
+
+    public static async Task Main(string[] arguments)
     {
-        var cancellationTokenSource = new CancellationTokenSource();
+        var configuration = ConfigurationFactory.Create(arguments);
 
-        SetupCancellation(cancellationTokenSource);
+        using var host = Host
+            .CreateDefaultBuilder(arguments)
+            .ConfigureServices(services => services
+                .AddAws(configuration)
+                .AddObservability(configuration))
+            .Build();
 
-        await RunAsync(cancellationTokenSource);
-    }
-
-    private static void SetupCancellation(CancellationTokenSource cancellationTokenSource)
-    {
-        AssemblyLoadContext.Default.Unloading += _ => cancellationTokenSource.Cancel();
-
-        Console.CancelKeyPress += (_, eventArguments) =>
-        {
-            eventArguments.Cancel = true;
-            
-            cancellationTokenSource.Cancel();
-        };
-    }
-
-    private static async Task RunAsync(CancellationTokenSource cancellationTokenSource)
-    {
-        while (cancellationTokenSource.IsCancellationRequested is false)
-        {
-            await Task.Delay(5000, cancellationTokenSource.Token);
-            
-            await Console.Out.WriteLineAsync("Hello, World!");
-        }
+        await host.RunAsync();
     }
 }
