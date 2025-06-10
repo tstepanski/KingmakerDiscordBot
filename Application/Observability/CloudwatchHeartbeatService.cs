@@ -7,18 +7,20 @@ using Microsoft.Extensions.Options;
 
 namespace KingmakerDiscordBot.Application.Observability;
 
-internal sealed class CloudwatchHeartbeatService(IAmazonCloudWatch cloudWatch, IOptions<Cloudwatch> settings,
-    ILogger<CloudwatchHeartbeatService> logger) : BackgroundService
+internal sealed class CloudwatchHeartbeatService(IAmazonCloudWatch cloudWatch, IOptions<Heartbeat> settings,
+    IInstanceIdHelper instanceIdHelper, ILogger<CloudwatchHeartbeatService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var instanceId = await instanceIdHelper.GetIdAsync(stoppingToken);
+
         while (stoppingToken.IsCancellationRequested is false)
         {
-            await SendHeartbeat(stoppingToken);
+            await SendHeartbeat(instanceId, stoppingToken);
 
             try
             {
-                await Task.Delay(settings.Value.HeartbeatInterval, stoppingToken);
+                await Task.Delay(settings.Value.Interval, stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -27,7 +29,7 @@ internal sealed class CloudwatchHeartbeatService(IAmazonCloudWatch cloudWatch, I
         }
     }
 
-    private async Task SendHeartbeat(CancellationToken cancellationToken)
+    private async Task SendHeartbeat(string instanceId, CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
             
@@ -35,8 +37,15 @@ internal sealed class CloudwatchHeartbeatService(IAmazonCloudWatch cloudWatch, I
             
         logger.LogDebug("Sending");
 
+        var dimension = new Dimension
+        {
+            Name = settings.Value.InstanceDimensionName,
+            Value = instanceId
+        };
+        
         var datum = new MetricDatum
         {
+            Dimensions = [dimension],
             MetricName = settings.Value.MetricName,
             Timestamp = now,
             Unit = StandardUnit.Count,

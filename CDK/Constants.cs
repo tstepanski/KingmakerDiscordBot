@@ -8,6 +8,8 @@ internal static class Constants
 
     public const int HeartbeatIntervalInSeconds = 60;
 
+    public const string HeartbeatInstanceDimensionName = "InstanceId";
+
     public const string HeartbeatMetricName = "StatusCheckFailed_Instance";
 
     public const string HeartbeatNamespace = "AWS/EC2";

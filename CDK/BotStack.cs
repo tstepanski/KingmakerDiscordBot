@@ -58,7 +58,7 @@ internal sealed partial class BotStack : Stack
         {
             DimensionsMap = new Dictionary<string, string>
             {
-                { "InstanceId", instance.Ref }
+                { Constants.HeartbeatInstanceDimensionName, instance.Ref }
             },
             MetricName = Constants.HeartbeatMetricName,
             Namespace = Constants.HeartbeatNamespace,
@@ -138,6 +138,7 @@ internal sealed partial class BotStack : Stack
         return token switch
         {
             "BUCKET" => bucket.BucketName,
+            "HEARTBEAT_INSTANCE_DIMENSION_NAME" => Constants.HeartbeatInstanceDimensionName,
             "HEARTBEAT_INTERVAL_IN_SECONDS" => Constants.HeartbeatIntervalInSeconds.ToString(),
             "HEARTBEAT_METRIC_NAME" => Constants.HeartbeatMetricName,
             "HEARTBEAT_NAMESPACE" => Constants.HeartbeatNamespace,
