@@ -4,6 +4,8 @@ internal static class Constants
 {
     public const string ArtifactPathKey = "ARTIFACT_PATH";
 
+    public const string AwsRegion = "AWS_REGION";
+
     public const int HeartbeatIntervalInSeconds = 60;
 
     public const string HeartbeatMetricName = "StatusCheckFailed_Instance";

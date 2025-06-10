@@ -106,7 +106,7 @@ internal sealed partial class BotStack : Stack
         };
 
         var imageId = stack.GetContextOrThrow(Constants.ParentImageIdKey);
-        var userData = GetBase64EncodedUserData(bucket);
+        var userData = GetBase64EncodedUserData(stack, bucket);
 
         var properties = new CfnInstanceProps
         {
@@ -119,20 +119,21 @@ internal sealed partial class BotStack : Stack
         return new CfnInstance(stack, nameof(CfnInstance), properties);
     }
 
-    private static string GetBase64EncodedUserData(IBucket bucket)
+    private static string GetBase64EncodedUserData(BotStack stack, IBucket bucket)
     {
+        var region = stack.GetContextOrThrow(Constants.AwsRegion);
         var location = Assembly.GetExecutingAssembly().Location;
         var directory = Directory.GetParent(location);
         var path = Path.Join(directory!.FullName, "user-data.yml");
 
         var userData = File.ReadAllText(path);
 
-        userData = TokenRegex.Replace(userData, match => GetTokenReplacement(match.Groups[1].Value, bucket));
+        userData = TokenRegex.Replace(userData, match => GetTokenReplacement(match.Groups[1].Value, bucket, region));
 
         return Fn.Base64(userData);
     }
 
-    private static string GetTokenReplacement(string token, IBucket bucket)
+    private static string GetTokenReplacement(string token, IBucket bucket, string region)
     {
         return token switch
         {
@@ -141,7 +142,7 @@ internal sealed partial class BotStack : Stack
             "HEARTBEAT_METRIC_NAME" => Constants.HeartbeatMetricName,
             "HEARTBEAT_NAMESPACE" => Constants.HeartbeatNamespace,
             "LOG_GROUP" => Constants.BotName,
-            "REGION" => Aws.REGION,
+            "REGION" => region,
             _ => throw new ArgumentOutOfRangeException(nameof(token), token)
         };
     }
