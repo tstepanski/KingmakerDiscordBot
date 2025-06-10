@@ -78,7 +78,7 @@ internal sealed partial class BotStack : Stack
             EvaluationPeriods = 2,
             Metric = metric,
             Threshold = 1,
-            TreatMissingData = TreatMissingData.NOT_BREACHING
+            TreatMissingData = TreatMissingData.BREACHING
         };
 
         return new Alarm(stack, name, properties);
