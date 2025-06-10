@@ -17,11 +17,11 @@ write_files:
   
   - path: /etc/profile.d/envvars.sh
     content: |
-      export AWS__LOGGROUP={{ LOG_GROUP }};
-      export AWS__REGION={{ REGION }};
-      export CLOUDWATCH__HEARTBEATINTERVALINSECONDS={{ HEARTBEAT_INTERVAL_IN_SECONDS }};
-      export CLOUDWATCH__METRICNAME={{ HEARTBEAT_METRIC_NAME }};
-      export CLOUDWATCH__NAMESPACE={{ HEARTBEAT_NAMESPACE }};
+      AWS__LOGGROUP={{ LOG_GROUP }};
+      AWS__REGION={{ REGION }};
+      CLOUDWATCH__HEARTBEATINTERVALINSECONDS={{ HEARTBEAT_INTERVAL_IN_SECONDS }};
+      CLOUDWATCH__METRICNAME={{ HEARTBEAT_METRIC_NAME }};
+      CLOUDWATCH__NAMESPACE={{ HEARTBEAT_NAMESPACE }};
 
 runcmd:
   - mkdir -p /opt/kingmaker-discord-bot
