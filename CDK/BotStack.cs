@@ -155,7 +155,7 @@ internal sealed partial class BotStack : Stack
 
         var spotOptions = new LaunchTemplateSpotOptions
         {
-            InterruptionBehavior = SpotInstanceInterruption.TERMINATE,
+            InterruptionBehavior = SpotInstanceInterruption.STOP,
             MaxPrice = maximumSpotPriceParsed,
             RequestType = SpotRequestType.PERSISTENT
         };
