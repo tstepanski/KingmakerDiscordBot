@@ -24,6 +24,8 @@ write_files:
       CLOUDWATCH__NAMESPACE={{ HEARTBEAT_NAMESPACE }};
 
 runcmd:
+  - curl https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
+  - yum install -y /home/ec2-user/xray.rpm
   - mkdir -p /opt/kingmaker-discord-bot
   - aws s3 sync s3://{{ BUCKET }}/ /opt/kingmaker-discord-bot
   - chmod +x /opt/kingmaker-discord-bot/Application
