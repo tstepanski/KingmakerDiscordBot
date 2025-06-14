@@ -24,9 +24,58 @@ write_files:
       HEARTBEAT__METRICNAME={{ HEARTBEAT_METRIC_NAME }};
       HEARTBEAT__NAMESPACE={{ HEARTBEAT_NAMESPACE }};
 
+  - path: /opt/cloudwatch-config.json
+    content: |
+      {
+        "agent": {
+          "metrics_collection_interval": 60,
+          "run_as_user": "root"
+        },
+        "metrics": {
+          "append_dimensions": {
+            "InstanceId": "${aws:InstanceId}"
+          },
+          "metrics_collected": {
+            "cpu": {
+              "measurement": [
+                "cpu_usage_idle",
+                "cpu_usage_user",
+                "cpu_usage_system"
+              ],
+              "totalcpu": true
+            },
+            "mem": {
+              "measurement": [
+                "mem_used_percent"
+              ]
+            },
+            "disk": {
+              "measurement": [
+                "used_percent"
+              ],
+              "resources": [
+                "/"
+              ]
+            },
+            "swap": {
+              "measurement": [
+                "swap_used_percent"
+              ]
+            },
+            "net": {
+              "measurement": [
+                "bytes_in",
+                "bytes_out"
+              ]
+            }
+          }
+        }
+      }
+
 runcmd:
   - curl https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
   - yum install -y /home/ec2-user/xray.rpm
+  - yum install -y amazon-cloudwatch-agent
   - mkdir -p /opt/kingmaker-discord-bot
   - aws s3 sync s3://{{ BUCKET }}/ /opt/kingmaker-discord-bot
   - chmod +x /opt/kingmaker-discord-bot/Application
