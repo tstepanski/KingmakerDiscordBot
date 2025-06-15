@@ -123,30 +123,25 @@ internal sealed partial class BotStack : Stack
         return new LogGroup(stack, nameof(LogGroup), properties);
     }
 
-    private static CfnAutoScalingGroup CreateAutoScalingGroup(BotStack stack, LaunchTemplate launchTemplate,
+    private static AutoScalingGroup CreateAutoScalingGroup(BotStack stack, LaunchTemplate launchTemplate,
         IVpc vpc)
     {
-        var launchTemplateSpecification = new CfnAutoScalingGroup.LaunchTemplateSpecificationProperty
+        var subnetSelection = new SubnetSelection
         {
-            LaunchTemplateId = launchTemplate.LaunchTemplateId,
-            Version = "$Latest"
+            Subnets = vpc.PublicSubnets
         };
 
-        var vpcZoneIdentifier = vpc
-            .PublicSubnets
-            .Select(subnet => subnet.SubnetId)
-            .ToArray();
-        
-        var properties = new CfnAutoScalingGroupProps
+        var properties = new AutoScalingGroupProps
         {
             AutoScalingGroupName = Constants.BotName,
-            LaunchTemplate = launchTemplateSpecification,
-            MaxSize = "1",
-            MinSize = "1",
-            VpcZoneIdentifier = vpcZoneIdentifier
+            LaunchTemplate = launchTemplate,
+            MaxCapacity = 1,
+            MinCapacity = 1,
+            Vpc = vpc,
+            VpcSubnets = subnetSelection
         };
 
-        return new CfnAutoScalingGroup(stack, nameof(CfnAutoScalingGroup), properties);
+        return new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
     }
 
     private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret,
