@@ -135,14 +135,22 @@ internal sealed partial class BotStack : Stack
         var properties = new AutoScalingGroupProps
         {
             AutoScalingGroupName = Constants.BotName,
-            LaunchTemplate = launchTemplate,
             MaxCapacity = 1,
             MinCapacity = 1,
             Vpc = vpc,
             VpcSubnets = subnetSelection
         };
 
-        return new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
+        var autoScalingGroup = new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
+        var lowLevelConstruct = (CfnAutoScalingGroup)autoScalingGroup.Node.DefaultChild!;
+
+        lowLevelConstruct.LaunchTemplate = new CfnAutoScalingGroup.LaunchTemplateSpecificationProperty
+        {
+            LaunchTemplateId = launchTemplate.LaunchTemplateId,
+            Version = "$Latest"
+        };
+        
+        return autoScalingGroup;
     }
 
     private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret,
