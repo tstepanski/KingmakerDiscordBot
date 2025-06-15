@@ -6,6 +6,7 @@ using Amazon.XRay.Recorder.Handlers.AwsSdk;
 using Amazon.XRay.Recorder.Handlers.System.Net;
 using Discord.Net.Rest;
 using Discord.Net.WebSockets;
+using KingmakerDiscordBot.Application.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,10 @@ internal static class ObservabilityExtensions
         AWSXRayRecorder.InitializeInstance(configuration);
         AWSSDKHandler.RegisterXRayForAllServices();
 
+        var heartbeatConfiguration = configuration.GetSection("Heartbeat");
+
         return serviceCollection
+            .Configure<Heartbeat>(heartbeatConfiguration)
             .AddAWSService<IAmazonCloudWatch>()
             .AddHostedService<CloudwatchHeartbeatService>()
             .AddSingleton<IInstanceIdHelper, InstanceIdHelper>()
