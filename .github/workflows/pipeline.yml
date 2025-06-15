@@ -87,6 +87,14 @@ jobs:
         run: "cdk synth --app='./CDK' -c ARTIFACT_PATH='../Application' -c AWS_LINUX_AMI_ID='${{ secrets.AWS_LINUX_AMI }}' -c AWS_REGION='${{ secrets.AWS_REGION }}' -c DEV_IP='${{ secrets.DEV_IP }}' -c DISCORD_TOKEN_ARN='${{ secrets.DISCORD_TOKEN_ARN }}' -c MAX_SPOT_PRICE='${{ secrets.MAX_SPOT_PRICE }}' -c VPC_CIDR='${{ secrets.VPC_CIDR }}'"
         working-directory: "CDK"
 
+      - name: "Upload"
+        uses: "actions/upload-artifact@v4"
+        with:
+          if-no-files-found: "error"
+          name: "Synthesis"
+          path: "cdk.out"
+          retention-days: 2
+
       - name: "Compare"
         run: "cdk diff --app='cdk.out'"
         working-directory: "CDK"
