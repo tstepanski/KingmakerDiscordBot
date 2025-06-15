@@ -41,9 +41,9 @@ internal sealed partial class BotStack : Stack
 
         var userData = File.ReadAllText(path);
 
-        userData = TokenRegex.Replace(userData, 
+        userData = TokenRegex.Replace(userData,
             match => GetTokenReplacement(match.Groups[1].Value, bucket, region, tokenSecret, logGroup));
-        
+
         return UserData.Custom(userData);
     }
 
@@ -79,7 +79,7 @@ internal sealed partial class BotStack : Stack
     private static Alarm CreateHeartbeatAlarm(BotStack stack)
     {
         const string name = $"{Constants.HeartbeatMetricName}-{nameof(Alarm)}";
-        
+
         var metricProperties = new MetricProps
         {
             MetricName = Constants.HeartbeatMetricName,
@@ -126,7 +126,7 @@ internal sealed partial class BotStack : Stack
         {
             Subnets = vpc.PublicSubnets
         };
-        
+
         var properties = new AutoScalingGroupProps
         {
             LaunchTemplate = launchTemplate,
@@ -135,7 +135,7 @@ internal sealed partial class BotStack : Stack
             Vpc = vpc,
             VpcSubnets = subnetSelection
         };
-        
+
         return new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
     }
 
@@ -156,7 +156,7 @@ internal sealed partial class BotStack : Stack
         };
     }
 
-    private static LaunchTemplate CreateLaunchTemplate(BotStack stack, Role role, SecurityGroup securityGroup, 
+    private static LaunchTemplate CreateLaunchTemplate(BotStack stack, Role role, SecurityGroup securityGroup,
         UserData userData)
     {
         var instanceType = InstanceType.Of(InstanceClass.T4G, InstanceSize.SMALL);
@@ -172,9 +172,9 @@ internal sealed partial class BotStack : Stack
 
         var spotOptions = new LaunchTemplateSpotOptions
         {
-            InterruptionBehavior = SpotInstanceInterruption.STOP,
+            InterruptionBehavior = SpotInstanceInterruption.TERMINATE,
             MaxPrice = maximumSpotPriceParsed,
-            RequestType = SpotRequestType.PERSISTENT
+            RequestType = SpotRequestType.ONE_TIME
         };
 
         var properties = new LaunchTemplateProps
