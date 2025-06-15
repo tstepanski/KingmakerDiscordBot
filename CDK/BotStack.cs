@@ -147,7 +147,7 @@ internal sealed partial class BotStack : Stack
             VpcZoneIdentifier = vpcZoneIdentifier
         };
 
-        return new CfnAutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
+        return new CfnAutoScalingGroup(stack, nameof(CfnAutoScalingGroup), properties);
     }
 
     private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret,
