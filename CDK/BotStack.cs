@@ -25,7 +25,9 @@ internal sealed partial class BotStack : Stack
         var userData = CreateUserData(this, bucket, logGroup, tokenSecret, hasher);
         var launchTemplate = CreateLaunchTemplate(this, role, securityGroup, userData, hasher);
 
+        bucket.GrantRead(role);
         logGroup.GrantWrite(role);
+        logGroup.Grant(role, "logs:DescribeLogStreams");
         tokenSecret.GrantRead(role);
 
         _ = CreateAutoScalingGroup(this, launchTemplate, vpc);
