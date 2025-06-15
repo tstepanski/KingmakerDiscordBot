@@ -5,6 +5,8 @@ internal static class Constants
     public const string ArtifactPathKey = "ARTIFACT_PATH";
 
     public const string AwsRegion = "AWS_REGION";
+    
+    public const string DiscordTokenArn = "DISCORD_TOKEN_ARN";
 
     public const int HeartbeatIntervalInSeconds = 60;
 

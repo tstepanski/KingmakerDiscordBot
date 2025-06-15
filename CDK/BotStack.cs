@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Text.RegularExpressions;
 using Amazon.CDK;
+using Amazon.CDK.AWS.AutoScaling;
 using Amazon.CDK.AWS.CloudWatch;
 using Amazon.CDK.AWS.EC2;
 using Amazon.CDK.AWS.IAM;
@@ -19,13 +20,12 @@ internal sealed partial class BotStack : Stack
         var securityGroup = CreateSecurityGroup(vpc);
         var logGroup = CreateLogGroup(this);
         var role = CreateRole(this);
-        var launchTemplate = CreateLaunchTemplate(this, role, securityGroup);
 
         logGroup.GrantWrite(role);
 
-        var instance = CreateInstance(this, launchTemplate, vpc, bucket);
+        var instance = CreateInstance(this, bucket, role, securityGroup, vpc);
 
-        _ = CreateHeartbeatAlarm(this, instance);
+        _ = CreateHeartbeatAlarm(this);
     }
 
     private static PolicyStatement CreateCloudwatchPolicyStatement()
@@ -50,16 +50,12 @@ internal sealed partial class BotStack : Stack
         return new PolicyStatement(properties);
     }
 
-    private static Alarm CreateHeartbeatAlarm(BotStack stack, CfnInstance instance)
+    private static Alarm CreateHeartbeatAlarm(BotStack stack)
     {
         const string name = $"{Constants.HeartbeatMetricName}-{nameof(Alarm)}";
-
+        
         var metricProperties = new MetricProps
         {
-            DimensionsMap = new Dictionary<string, string>
-            {
-                { Constants.HeartbeatInstanceDimensionName, instance.Ref }
-            },
             MetricName = Constants.HeartbeatMetricName,
             Namespace = Constants.HeartbeatNamespace,
             Period = Duration.Seconds(Constants.HeartbeatIntervalInSeconds),
@@ -97,26 +93,42 @@ internal sealed partial class BotStack : Stack
         return new LogGroup(stack, nameof(LogGroup), properties);
     }
 
-    private static CfnInstance CreateInstance(BotStack stack, LaunchTemplate launchTemplate, Vpc vpc, IBucket bucket)
+    private static AutoScalingGroup CreateInstance(BotStack stack, IBucket bucket, Role role,
+        SecurityGroup securityGroup, Vpc vpc)
     {
-        var launchTemplateSpecificationProperty = new CfnInstance.LaunchTemplateSpecificationProperty
-        {
-            LaunchTemplateId = launchTemplate.LaunchTemplateId,
-            Version = launchTemplate.LatestVersionNumber
-        };
-
         var imageId = stack.GetContextOrThrow(Constants.ParentImageIdKey);
-        var userData = GetBase64EncodedUserData(stack, bucket);
+        var region = stack.GetContextOrThrow(Constants.AwsRegion);
+        var userDataContent = GetBase64EncodedUserData(stack, bucket);
+        var userData = UserData.Custom(userDataContent);
+        var instanceType = InstanceType.Of(InstanceClass.T4G, InstanceSize.SMALL);
+        var maximumSpotPrice = stack.GetContextOrThrow(Constants.MaximumSpotPriceKey);
 
-        var properties = new CfnInstanceProps
+        var machineImage = MachineImage.GenericLinux(new Dictionary<string, string>
         {
-            ImageId = imageId,
-            LaunchTemplate = launchTemplateSpecificationProperty,
-            SubnetId = vpc.PublicSubnets[0].SubnetId,
-            UserData = userData
-        };
+            { region, imageId }
+        });
 
-        return new CfnInstance(stack, nameof(CfnInstance), properties);
+        var subnetSelection = new SubnetSelection
+        {
+            Subnets = vpc.PublicSubnets
+        };
+        
+        var properties = new AutoScalingGroupProps
+        {
+            InstanceType = instanceType,
+            MachineImage = machineImage,
+            MaxCapacity = 1,
+            MinCapacity = 1,
+            RequireImdsv2 = true,
+            Role = role,
+            SecurityGroup = securityGroup,
+            SpotPrice = maximumSpotPrice,
+            UserData = userData,
+            Vpc = vpc,
+            VpcSubnets = subnetSelection
+        };
+        
+        return new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
     }
 
     private static string GetBase64EncodedUserData(BotStack stack, IBucket bucket)
@@ -138,6 +150,7 @@ internal sealed partial class BotStack : Stack
         return token switch
         {
             "BUCKET" => bucket.BucketName,
+            "DISCORD_TOKEN_ARN" => Constants.DiscordTokenArn,
             "HEARTBEAT_INSTANCE_DIMENSION_NAME" => Constants.HeartbeatInstanceDimensionName,
             "HEARTBEAT_INTERVAL_IN_SECONDS" => Constants.HeartbeatIntervalInSeconds.ToString(),
             "HEARTBEAT_METRIC_NAME" => Constants.HeartbeatMetricName,
@@ -146,32 +159,6 @@ internal sealed partial class BotStack : Stack
             "REGION" => region,
             _ => throw new ArgumentOutOfRangeException(nameof(token), token)
         };
-    }
-
-    private static LaunchTemplate CreateLaunchTemplate(BotStack stack, Role role, SecurityGroup securityGroup)
-    {
-        var instanceType = InstanceType.Of(InstanceClass.T4G, InstanceSize.SMALL);
-        var maximumSpotPriceRaw = stack.GetContextOrThrow(Constants.MaximumSpotPriceKey);
-        var maximumSpotPriceParsed = double.Parse(maximumSpotPriceRaw);
-
-        var spotOptions = new LaunchTemplateSpotOptions
-        {
-            InterruptionBehavior = SpotInstanceInterruption.STOP,
-            MaxPrice = maximumSpotPriceParsed,
-            RequestType = SpotRequestType.PERSISTENT
-        };
-
-        var properties = new LaunchTemplateProps
-        {
-            InstanceType = instanceType,
-            LaunchTemplateName = Constants.BotName,
-            RequireImdsv2 = true,
-            Role = role,
-            SecurityGroup = securityGroup,
-            SpotOptions = spotOptions
-        };
-
-        return new LaunchTemplate(stack, nameof(LaunchTemplate), properties);
     }
 
     private static Role CreateRole(BotStack stack)
