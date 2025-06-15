@@ -7,6 +7,7 @@ using Amazon.CDK.AWS.EC2;
 using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.Logs;
 using Amazon.CDK.AWS.S3;
+using Amazon.CDK.AWS.SecretsManager;
 
 namespace KingmakerDiscordBot.CDK;
 
@@ -17,15 +18,23 @@ internal sealed partial class BotStack : Stack
     public BotStack(App application, IBucket bucket) : base(application, nameof(BotStack))
     {
         var vpc = CreateVpc(this);
-        var securityGroup = CreateSecurityGroup(vpc);
+        var securityGroup = CreateSecurityGroup(this, vpc);
         var logGroup = CreateLogGroup(this);
         var role = CreateRole(this);
+        var tokenSecret = LookupTokenSecret(this);
 
         logGroup.GrantWrite(role);
+        tokenSecret.GrantRead(role);
 
-        var instance = CreateInstance(this, bucket, role, securityGroup, vpc);
-
+        _ = CreateAutoScalingGroup(this, bucket, role, securityGroup, vpc, tokenSecret);
         _ = CreateHeartbeatAlarm(this);
+    }
+
+    private static ISecret LookupTokenSecret(BotStack botStack)
+    {
+        var tokenArn = botStack.GetContextOrThrow("DISCORD_TOKEN_ARN");
+
+        return Secret.FromSecretCompleteArn(botStack, nameof(ISecret), tokenArn);
     }
 
     private static PolicyStatement CreateCloudwatchPolicyStatement()
@@ -93,12 +102,12 @@ internal sealed partial class BotStack : Stack
         return new LogGroup(stack, nameof(LogGroup), properties);
     }
 
-    private static AutoScalingGroup CreateInstance(BotStack stack, IBucket bucket, Role role,
-        SecurityGroup securityGroup, Vpc vpc)
+    private static AutoScalingGroup CreateAutoScalingGroup(BotStack stack, IBucket bucket, Role role,
+        SecurityGroup securityGroup, Vpc vpc, ISecret tokenSecret)
     {
         var imageId = stack.GetContextOrThrow(Constants.ParentImageIdKey);
         var region = stack.GetContextOrThrow(Constants.AwsRegion);
-        var userDataContent = GetBase64EncodedUserData(stack, bucket);
+        var userDataContent = GetBase64EncodedUserData(stack, bucket, tokenSecret);
         var userData = UserData.Custom(userDataContent);
         var instanceType = InstanceType.Of(InstanceClass.T4G, InstanceSize.SMALL);
         var maximumSpotPrice = stack.GetContextOrThrow(Constants.MaximumSpotPriceKey);
@@ -131,7 +140,7 @@ internal sealed partial class BotStack : Stack
         return new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
     }
 
-    private static string GetBase64EncodedUserData(BotStack stack, IBucket bucket)
+    private static string GetBase64EncodedUserData(BotStack stack, IBucket bucket, ISecret tokenSecret)
     {
         var region = stack.GetContextOrThrow(Constants.AwsRegion);
         var location = Assembly.GetExecutingAssembly().Location;
@@ -140,17 +149,18 @@ internal sealed partial class BotStack : Stack
 
         var userData = File.ReadAllText(path);
 
-        userData = TokenRegex.Replace(userData, match => GetTokenReplacement(match.Groups[1].Value, bucket, region));
+        userData = TokenRegex.Replace(userData, 
+            match => GetTokenReplacement(match.Groups[1].Value, bucket, region, tokenSecret));
 
         return Fn.Base64(userData);
     }
 
-    private static string GetTokenReplacement(string token, IBucket bucket, string region)
+    private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret)
     {
         return token switch
         {
             "BUCKET" => bucket.BucketName,
-            "DISCORD_TOKEN_ARN" => Constants.DiscordTokenArn,
+            "DISCORD_TOKEN_ARN" => tokenSecret.SecretFullArn!,
             "HEARTBEAT_INSTANCE_DIMENSION_NAME" => Constants.HeartbeatInstanceDimensionName,
             "HEARTBEAT_INTERVAL_IN_SECONDS" => Constants.HeartbeatIntervalInSeconds.ToString(),
             "HEARTBEAT_METRIC_NAME" => Constants.HeartbeatMetricName,
@@ -186,7 +196,7 @@ internal sealed partial class BotStack : Stack
         return role;
     }
 
-    private static SecurityGroup CreateSecurityGroup(Vpc vpc)
+    private static SecurityGroup CreateSecurityGroup(BotStack stack, Vpc vpc)
     {
         var properties = new SecurityGroupProps
         {
@@ -197,7 +207,7 @@ internal sealed partial class BotStack : Stack
         };
 
         var securityGroup = new SecurityGroup(vpc, nameof(SecurityGroup), properties);
-        var developerIp = securityGroup.GetContextOrThrow("DEV_IP");
+        var developerIp = stack.GetContextOrThrow("DEV_IP");
 
         securityGroup.AddIngressRule(Peer.Ipv4(developerIp), Port.SSH, "Allow SSH for Development");
 
