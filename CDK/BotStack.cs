@@ -15,10 +15,9 @@ internal sealed partial class BotStack : Stack
 {
     private static readonly Regex TokenRegex = TokenRegexFactory();
 
-    public BotStack(App application, IBucket bucket, Hasher hasher) : base(application, nameof(BotStack))
+    public BotStack(App application, IBucket bucket, IVpc vpc, ISecurityGroup securityGroup, Hasher hasher) : 
+        base(application, nameof(BotStack))
     {
-        var vpc = CreateVpc(this);
-        var securityGroup = CreateSecurityGroup(this, vpc);
         var logGroup = CreateLogGroup(this);
         var role = CreateRole(this);
         var tokenSecret = LookupTokenSecret(this);
@@ -125,7 +124,7 @@ internal sealed partial class BotStack : Stack
     }
 
     private static CfnAutoScalingGroup CreateAutoScalingGroup(BotStack stack, LaunchTemplate launchTemplate,
-        Vpc vpc)
+        IVpc vpc)
     {
         var launchTemplateSpecification = new CfnAutoScalingGroup.LaunchTemplateSpecificationProperty
         {
@@ -167,7 +166,7 @@ internal sealed partial class BotStack : Stack
         };
     }
 
-    private static LaunchTemplate CreateLaunchTemplate(BotStack stack, Role role, SecurityGroup securityGroup,
+    private static LaunchTemplate CreateLaunchTemplate(BotStack stack, Role role, ISecurityGroup securityGroup,
         UserData userData, Hasher hasher)
     {
         var instanceType = InstanceType.Of(InstanceClass.T4G, InstanceSize.SMALL);
@@ -227,47 +226,6 @@ internal sealed partial class BotStack : Stack
         role.AddToPolicy(cloudwatchPolicyStatement);
 
         return role;
-    }
-
-    private static SecurityGroup CreateSecurityGroup(BotStack stack, Vpc vpc)
-    {
-        var properties = new SecurityGroupProps
-        {
-            AllowAllOutbound = true,
-            Description = "Allow All Output, SSH In Only",
-            SecurityGroupName = Constants.BotName,
-            Vpc = vpc
-        };
-
-        var securityGroup = new SecurityGroup(vpc, nameof(SecurityGroup), properties);
-        var developerIp = stack.GetContextOrThrow("DEV_IP");
-
-        securityGroup.AddIngressRule(Peer.Ipv4(developerIp), Port.SSH, "Allow SSH for Development");
-
-        return securityGroup;
-    }
-
-    private static Vpc CreateVpc(BotStack stack)
-    {
-        var cidr = stack.GetContextOrThrow(Constants.VirtualPrivateCloudClasslessInterDomainRoutingBlock);
-
-        var subnetConfiguration = new SubnetConfiguration
-        {
-            Name = "Public",
-            CidrMask = 24,
-            SubnetType = SubnetType.PUBLIC
-        };
-
-        var properties = new VpcProps
-        {
-            IpAddresses = IpAddresses.Cidr(cidr),
-            MaxAzs = 1,
-            NatGateways = 0,
-            SubnetConfiguration = [subnetConfiguration],
-            VpcName = Constants.BotName,
-        };
-
-        return new Vpc(stack, nameof(Vpc), properties);
     }
 
     [GeneratedRegex(@"{{\s*([^\s]+)\s*}}", RegexOptions.Compiled)]
