@@ -1,9 +1,9 @@
-﻿using Amazon.CloudWatchLogs;
-using Amazon.CloudWatchLogs.Model;
+﻿using System.Text.Json;
 using KingmakerDiscordBot.Application.Configuration;
 using KingmakerDiscordBot.Application.General;
 using KingmakerDiscordBot.Application.Logic;
 using KingmakerDiscordBot.Application.Observability;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 namespace KingmakerDiscordBot.Application;
@@ -14,53 +14,25 @@ public static class Program
 
     public static async Task Main(string[] arguments)
     {
-        try
-        {
-            var configuration = ConfigurationFactory.Create(arguments);
+        var configuration = ConfigurationFactory.Create(arguments);
+        
+        await LogConfigurationAsync(configuration);
 
-            using var host = Host
-                .CreateDefaultBuilder(arguments)
-                .ConfigureServices(services => services
-                    .AddAws(configuration)
-                    .AddObservability(configuration)
-                    .AddLogic(configuration))
-                .Build();
+        using var host = Host
+            .CreateDefaultBuilder(arguments)
+            .ConfigureServices(services => services
+                .AddAws(configuration)
+                .AddObservability(configuration)
+                .AddLogic(configuration))
+            .Build();
 
-            await host.RunAsync();
-        }
-        catch (Exception exception)
-        {
-            await LogExceptionToCloudWatchAsync(exception);
-        }
+        await host.RunAsync();
     }
 
-    private static async Task LogExceptionToCloudWatchAsync(Exception exception)
+    private static async Task LogConfigurationAsync(IConfiguration configuration)
     {
-        const string logGroupName = "kingmaker-discord-bot";
-        const string logStreamName = "exceptions";
-        using var client = new AmazonCloudWatchLogsClient();
+        await using var standardOutput = Console.OpenStandardOutput();
 
-        var logStreamRequest = new CreateLogStreamRequest
-        {
-            LogGroupName = logGroupName,
-            LogStreamName = logStreamName
-        };
-
-        await client.CreateLogStreamAsync(logStreamRequest);
-
-        var logEvent = new InputLogEvent
-        {
-            Message = exception.ToString(),
-            Timestamp = DateTime.UtcNow
-        };
-
-        var eventsRequest = new PutLogEventsRequest
-        {
-            LogGroupName = logGroupName,
-            LogStreamName = logStreamName,
-            LogEvents = [logEvent]
-        };
-
-        await client.PutLogEventsAsync(eventsRequest);
+        await JsonSerializer.SerializeAsync(standardOutput, configuration, PrettySerializationSettings.Instance);
     }
 }
