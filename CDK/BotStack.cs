@@ -129,6 +129,7 @@ internal sealed partial class BotStack : Stack
 
         var properties = new AutoScalingGroupProps
         {
+            AutoScalingGroupName = Constants.BotName,
             LaunchTemplate = launchTemplate,
             MaxCapacity = 1,
             MinCapacity = 1,
