@@ -73,13 +73,6 @@ internal static class ObservabilityExtensions
                             client.DefaultRequestHeaders.AcceptEncoding.Add(headerValue);
                         }
                     });
-            })
-            .AddLogging(builder =>
-            {
-                var loggingConfigurationSection = configuration.GetAWSLoggingConfigSection();
-
-                builder.ClearProviders();
-                builder.AddAWSProvider(loggingConfigurationSection);
             });
     }
 }
