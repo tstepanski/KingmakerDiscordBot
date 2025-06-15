@@ -17,13 +17,14 @@ write_files:
   
   - path: /etc/profile.d/envvars.sh
     content: |
-      AWS__LOGGROUP={{ LOG_GROUP }};
-      AWS__REGION={{ REGION }};
-      DISCORD__TOKENARN={{ DISCORD_TOKEN_ARN }};
+      AWS_REGION={{ REGION }}
+      AWS__LOGGROUP={{ LOG_GROUP }}
+      AWS__REGION={{ REGION }}
+      DISCORD__TOKENARN={{ DISCORD_TOKEN_ARN }}
       HEARTBEAT__INSTANCEDIMENSIONNAME={{ HEARTBEAT_INSTANCE_DIMENSION_NAME }}
-      HEARTBEAT__INTERVALINSECONDS={{ HEARTBEAT_INTERVAL_IN_SECONDS }};
-      HEARTBEAT__METRICNAME={{ HEARTBEAT_METRIC_NAME }};
-      HEARTBEAT__NAMESPACE={{ HEARTBEAT_NAMESPACE }};
+      HEARTBEAT__INTERVALINSECONDS={{ HEARTBEAT_INTERVAL_IN_SECONDS }}
+      HEARTBEAT__METRICNAME={{ HEARTBEAT_METRIC_NAME }}
+      HEARTBEAT__NAMESPACE={{ HEARTBEAT_NAMESPACE }}
 
   - path: /opt/cloudwatch-config.json
     content: |
@@ -75,9 +76,9 @@ write_files:
 
 runcmd:
   - curl https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
-  - yum install -y amazon-cloudwatch-agent icu /home/ec2-user/xray.rpm
+  - yum install -y amazon-cloudwatch-agent aws-cli icu /home/ec2-user/xray.rpm
   - mkdir -p /opt/kingmaker-discord-bot
-  - aws s3 sync s3://{{ BUCKET }}/ /opt/kingmaker-discord-bot
+  - aws s3 sync s3://{{ BUCKET }}/ /opt/kingmaker-discord-bot --region {{ REGION }}
   - chmod +x /opt/kingmaker-discord-bot/Application
   - systemctl daemon-reload
   - systemctl enable kingmaker-discord-bot
