@@ -65,7 +65,8 @@ internal sealed partial class BotStack : Stack
             MetricName = Constants.HeartbeatMetricName,
             Namespace = Constants.HeartbeatNamespace,
             Period = Duration.Seconds(Constants.HeartbeatIntervalInSeconds),
-            Statistic = "Minimum"
+            Statistic = "Sum",
+            Unit = Unit.COUNT
         };
 
         var metric = new Metric(metricProperties);
@@ -75,7 +76,7 @@ internal sealed partial class BotStack : Stack
             ActionsEnabled = true,
             AlarmDescription = "Verifies application is running normally",
             AlarmName = name,
-            ComparisonOperator = ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+            ComparisonOperator = ComparisonOperator.LESS_THAN_THRESHOLD,
             DatapointsToAlarm = 2,
             EvaluationPeriods = 2,
             Metric = metric,
