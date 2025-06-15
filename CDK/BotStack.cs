@@ -124,33 +124,30 @@ internal sealed partial class BotStack : Stack
         return new LogGroup(stack, nameof(LogGroup), properties);
     }
 
-    private static AutoScalingGroup CreateAutoScalingGroup(BotStack stack, LaunchTemplate launchTemplate,
+    private static CfnAutoScalingGroup CreateAutoScalingGroup(BotStack stack, LaunchTemplate launchTemplate,
         Vpc vpc)
     {
-        var subnetSelection = new SubnetSelection
-        {
-            Subnets = vpc.PublicSubnets
-        };
-
-        var properties = new AutoScalingGroupProps
-        {
-            AutoScalingGroupName = Constants.BotName,
-            MaxCapacity = 1,
-            MinCapacity = 1,
-            Vpc = vpc,
-            VpcSubnets = subnetSelection
-        };
-
-        var autoScalingGroup = new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
-        var lowLevelConstruct = (CfnAutoScalingGroup)autoScalingGroup.Node.DefaultChild!;
-
-        lowLevelConstruct.LaunchTemplate = new CfnAutoScalingGroup.LaunchTemplateSpecificationProperty
+        var launchTemplateSpecification = new CfnAutoScalingGroup.LaunchTemplateSpecificationProperty
         {
             LaunchTemplateId = launchTemplate.LaunchTemplateId,
             Version = "$Latest"
         };
+
+        var vpcZoneIdentifier = vpc
+            .PublicSubnets
+            .Select(subnet => subnet.SubnetId)
+            .ToArray();
         
-        return autoScalingGroup;
+        var properties = new CfnAutoScalingGroupProps
+        {
+            AutoScalingGroupName = Constants.BotName,
+            LaunchTemplate = launchTemplateSpecification,
+            MaxSize = "1",
+            MinSize = "1",
+            VpcZoneIdentifier = vpcZoneIdentifier
+        };
+
+        return new CfnAutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
     }
 
     private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret,
