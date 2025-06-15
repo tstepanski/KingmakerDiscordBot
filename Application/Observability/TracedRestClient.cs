@@ -19,7 +19,7 @@ internal sealed class TracedRestClient(string baseUrl, HttpClient client) : IRes
     {
         const string typeName = "Discord.Net.Rest.MultipartFile";
         
-        MultipartFileType = typeof(IRestClient)
+        MultipartFileType = typeof(DefaultRestClientProvider)
             .Assembly
             .GetType(typeName) ?? throw new InvalidOperationException($"Could not find {typeName}");
         
