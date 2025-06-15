@@ -165,6 +165,7 @@ internal sealed partial class BotStack : Stack
         var imageId = stack.GetContextOrThrow(Constants.ParentImageIdKey);
         var region = stack.GetContextOrThrow(Constants.AwsRegion);
         var maximumSpotPriceParsed = double.Parse(maximumSpotPriceRaw);
+        var versionHash = stack.GetContextOrThrow("HASH_SUFFIX");
 
         var machineImage = MachineImage.GenericLinux(new Dictionary<string, string>
         {
@@ -187,7 +188,8 @@ internal sealed partial class BotStack : Stack
             Role = role,
             SecurityGroup = securityGroup,
             SpotOptions = spotOptions,
-            UserData = userData
+            UserData = userData,
+            VersionDescription = $"Hash: {versionHash}"
         };
 
         return new LaunchTemplate(stack, nameof(LaunchTemplate), properties);
