@@ -25,8 +25,6 @@ internal sealed partial class BotStack : Stack
         var launchTemplate = CreateLaunchTemplate(this, role, securityGroup, userData, hasher);
 
         bucket.GrantRead(role);
-        logGroup.GrantWrite(role);
-        logGroup.Grant(role, "logs:DescribeLogStreams");
         tokenSecret.GrantRead(role);
 
         _ = CreateAutoScalingGroup(this, launchTemplate, vpc);
@@ -56,28 +54,6 @@ internal sealed partial class BotStack : Stack
         var tokenArn = botStack.GetContextOrThrow("DISCORD_TOKEN_ARN");
 
         return Secret.FromSecretCompleteArn(botStack, nameof(ISecret), tokenArn);
-    }
-
-    private static PolicyStatement CreateCloudwatchPolicyStatement()
-    {
-        var properties = new PolicyStatementProps
-        {
-            Actions = ["cloudwatch:PutMetricData"],
-            Conditions = new Dictionary<string, object>
-            {
-                {
-                    "StringEquals", new Dictionary<string, object>
-                    {
-                        { "cloudwatch:metricName", Constants.HeartbeatMetricName },
-                        { "cloudwatch:namespace", Constants.HeartbeatNamespace }
-                    }
-                }
-            },
-            Effect = Effect.ALLOW,
-            Resources = ["*"]
-        };
-
-        return new PolicyStatement(properties);
     }
 
     private static Alarm CreateHeartbeatAlarm(BotStack stack)
@@ -203,24 +179,21 @@ internal sealed partial class BotStack : Stack
         var servicePrincipal = new ServicePrincipal("ec2.amazonaws.com");
         var instanceCorePolicy = ManagedPolicy.FromAwsManagedPolicyName("AmazonSSMManagedInstanceCore");
         var xrayWritePolicy = ManagedPolicy.FromAwsManagedPolicyName("AWSXrayWriteOnlyAccess");
-        var cloudwatchPolicyStatement = CreateCloudwatchPolicyStatement();
+        var cloudWatchAgentServerPolicy = ManagedPolicy.FromAwsManagedPolicyName("CloudWatchAgentServerPolicy");
 
         var properties = new RoleProps
         {
             AssumedBy = servicePrincipal,
             ManagedPolicies =
             [
+                cloudWatchAgentServerPolicy,
                 instanceCorePolicy,
                 xrayWritePolicy
             ],
             RoleName = Constants.BotName
         };
 
-        var role = new Role(stack, nameof(Role), properties);
-
-        role.AddToPolicy(cloudwatchPolicyStatement);
-
-        return role;
+        return new Role(stack, nameof(Role), properties);
     }
 
     [GeneratedRegex(@"{{\s*([^\s]+)\s*}}", RegexOptions.Compiled)]
