@@ -10,9 +10,9 @@ internal static class Constants
 
     public const string HeartbeatInstanceDimensionName = "InstanceId";
 
-    public const string HeartbeatMetricName = "StatusCheckFailed_Instance";
+    public const string HeartbeatMetricName = "Alive";
 
-    public const string HeartbeatNamespace = "AWS/EC2";
+    public const string HeartbeatNamespace = "KingmakerDiscordBot/Heartbeat";
 
     public const string ParentImageIdKey = "AWS_LINUX_AMI_ID";
 
