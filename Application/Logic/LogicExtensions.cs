@@ -14,6 +14,7 @@ internal static class LogicExtensions
         return serviceCollection
             .Configure<InternalDiscordConfiguration>(discordConfiguration)
             .AddSingleton<IAmazonSecretsManager, AmazonSecretsManagerClient>()
-            .AddSingleton<IDiscordClientFactory, DiscordClientFactory>();
+            .AddSingleton<IDiscordClientFactory, DiscordClientFactory>()
+            .AddHostedService<Listener>();
     }
 }
