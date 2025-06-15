@@ -22,12 +22,29 @@ internal sealed partial class BotStack : Stack
         var logGroup = CreateLogGroup(this);
         var role = CreateRole(this);
         var tokenSecret = LookupTokenSecret(this);
+        var userData = CreateUserData(this, bucket, logGroup, tokenSecret);
+        var launchTemplate = CreateLaunchTemplate(this, role, securityGroup, userData);
 
         logGroup.GrantWrite(role);
         tokenSecret.GrantRead(role);
 
-        _ = CreateAutoScalingGroup(this, bucket, role, securityGroup, vpc, tokenSecret, logGroup);
+        _ = CreateAutoScalingGroup(this, launchTemplate, vpc);
         _ = CreateHeartbeatAlarm(this);
+    }
+
+    private static UserData CreateUserData(BotStack stack, IBucket bucket, LogGroup logGroup, ISecret tokenSecret)
+    {
+        var region = stack.GetContextOrThrow(Constants.AwsRegion);
+        var location = Assembly.GetExecutingAssembly().Location;
+        var directory = Directory.GetParent(location);
+        var path = Path.Join(directory!.FullName, "user-data.yml");
+
+        var userData = File.ReadAllText(path);
+
+        userData = TokenRegex.Replace(userData, 
+            match => GetTokenReplacement(match.Groups[1].Value, bucket, region, tokenSecret, logGroup));
+        
+        return UserData.Custom(userData);
     }
 
     private static ISecret LookupTokenSecret(BotStack botStack)
@@ -102,21 +119,9 @@ internal sealed partial class BotStack : Stack
         return new LogGroup(stack, nameof(LogGroup), properties);
     }
 
-    private static AutoScalingGroup CreateAutoScalingGroup(BotStack stack, IBucket bucket, Role role,
-        SecurityGroup securityGroup, Vpc vpc, ISecret tokenSecret, LogGroup logGroup)
+    private static AutoScalingGroup CreateAutoScalingGroup(BotStack stack, LaunchTemplate launchTemplate,
+        Vpc vpc)
     {
-        var imageId = stack.GetContextOrThrow(Constants.ParentImageIdKey);
-        var region = stack.GetContextOrThrow(Constants.AwsRegion);
-        var userDataContent = GetBase64EncodedUserData(stack, bucket, tokenSecret, logGroup);
-        var userData = UserData.Custom(userDataContent);
-        var instanceType = InstanceType.Of(InstanceClass.T4G, InstanceSize.SMALL);
-        var maximumSpotPrice = stack.GetContextOrThrow(Constants.MaximumSpotPriceKey);
-
-        var machineImage = MachineImage.GenericLinux(new Dictionary<string, string>
-        {
-            { region, imageId }
-        });
-
         var subnetSelection = new SubnetSelection
         {
             Subnets = vpc.PublicSubnets
@@ -124,15 +129,9 @@ internal sealed partial class BotStack : Stack
         
         var properties = new AutoScalingGroupProps
         {
-            InstanceType = instanceType,
-            MachineImage = machineImage,
+            LaunchTemplate = launchTemplate,
             MaxCapacity = 1,
             MinCapacity = 1,
-            RequireImdsv2 = true,
-            Role = role,
-            SecurityGroup = securityGroup,
-            SpotPrice = maximumSpotPrice,
-            UserData = userData,
             Vpc = vpc,
             VpcSubnets = subnetSelection
         };
@@ -140,24 +139,8 @@ internal sealed partial class BotStack : Stack
         return new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
     }
 
-    private static string GetBase64EncodedUserData(BotStack stack, IBucket bucket, ISecret tokenSecret, 
-        ILogGroup logGroup)
-    {
-        var region = stack.GetContextOrThrow(Constants.AwsRegion);
-        var location = Assembly.GetExecutingAssembly().Location;
-        var directory = Directory.GetParent(location);
-        var path = Path.Join(directory!.FullName, "user-data.yml");
-
-        var userData = File.ReadAllText(path);
-
-        userData = TokenRegex.Replace(userData, 
-            match => GetTokenReplacement(match.Groups[1].Value, bucket, region, tokenSecret, logGroup));
-
-        return Fn.Base64(userData);
-    }
-
     private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret,
-        ILogGroup logGroup)
+        LogGroup logGroup)
     {
         return token switch
         {
@@ -171,6 +154,42 @@ internal sealed partial class BotStack : Stack
             "REGION" => region,
             _ => throw new ArgumentOutOfRangeException(nameof(token), token)
         };
+    }
+
+    private static LaunchTemplate CreateLaunchTemplate(BotStack stack, Role role, SecurityGroup securityGroup, 
+        UserData userData)
+    {
+        var instanceType = InstanceType.Of(InstanceClass.T4G, InstanceSize.SMALL);
+        var maximumSpotPriceRaw = stack.GetContextOrThrow(Constants.MaximumSpotPriceKey);
+        var imageId = stack.GetContextOrThrow(Constants.ParentImageIdKey);
+        var region = stack.GetContextOrThrow(Constants.AwsRegion);
+        var maximumSpotPriceParsed = double.Parse(maximumSpotPriceRaw);
+
+        var machineImage = MachineImage.GenericLinux(new Dictionary<string, string>
+        {
+            { region, imageId }
+        });
+
+        var spotOptions = new LaunchTemplateSpotOptions
+        {
+            InterruptionBehavior = SpotInstanceInterruption.STOP,
+            MaxPrice = maximumSpotPriceParsed,
+            RequestType = SpotRequestType.PERSISTENT
+        };
+
+        var properties = new LaunchTemplateProps
+        {
+            InstanceType = instanceType,
+            LaunchTemplateName = Constants.BotName,
+            MachineImage = machineImage,
+            RequireImdsv2 = true,
+            Role = role,
+            SecurityGroup = securityGroup,
+            SpotOptions = spotOptions,
+            UserData = userData
+        };
+
+        return new LaunchTemplate(stack, nameof(LaunchTemplate), properties);
     }
 
     private static Role CreateRole(BotStack stack)
