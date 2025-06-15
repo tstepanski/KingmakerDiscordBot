@@ -26,7 +26,7 @@ internal sealed partial class BotStack : Stack
         logGroup.GrantWrite(role);
         tokenSecret.GrantRead(role);
 
-        _ = CreateAutoScalingGroup(this, bucket, role, securityGroup, vpc, tokenSecret);
+        _ = CreateAutoScalingGroup(this, bucket, role, securityGroup, vpc, tokenSecret, logGroup);
         _ = CreateHeartbeatAlarm(this);
     }
 
@@ -103,11 +103,11 @@ internal sealed partial class BotStack : Stack
     }
 
     private static AutoScalingGroup CreateAutoScalingGroup(BotStack stack, IBucket bucket, Role role,
-        SecurityGroup securityGroup, Vpc vpc, ISecret tokenSecret)
+        SecurityGroup securityGroup, Vpc vpc, ISecret tokenSecret, LogGroup logGroup)
     {
         var imageId = stack.GetContextOrThrow(Constants.ParentImageIdKey);
         var region = stack.GetContextOrThrow(Constants.AwsRegion);
-        var userDataContent = GetBase64EncodedUserData(stack, bucket, tokenSecret);
+        var userDataContent = GetBase64EncodedUserData(stack, bucket, tokenSecret, logGroup);
         var userData = UserData.Custom(userDataContent);
         var instanceType = InstanceType.Of(InstanceClass.T4G, InstanceSize.SMALL);
         var maximumSpotPrice = stack.GetContextOrThrow(Constants.MaximumSpotPriceKey);
@@ -140,7 +140,8 @@ internal sealed partial class BotStack : Stack
         return new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
     }
 
-    private static string GetBase64EncodedUserData(BotStack stack, IBucket bucket, ISecret tokenSecret)
+    private static string GetBase64EncodedUserData(BotStack stack, IBucket bucket, ISecret tokenSecret, 
+        ILogGroup logGroup)
     {
         var region = stack.GetContextOrThrow(Constants.AwsRegion);
         var location = Assembly.GetExecutingAssembly().Location;
@@ -150,12 +151,13 @@ internal sealed partial class BotStack : Stack
         var userData = File.ReadAllText(path);
 
         userData = TokenRegex.Replace(userData, 
-            match => GetTokenReplacement(match.Groups[1].Value, bucket, region, tokenSecret));
+            match => GetTokenReplacement(match.Groups[1].Value, bucket, region, tokenSecret, logGroup));
 
         return Fn.Base64(userData);
     }
 
-    private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret)
+    private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret,
+        ILogGroup logGroup)
     {
         return token switch
         {
@@ -165,7 +167,7 @@ internal sealed partial class BotStack : Stack
             "HEARTBEAT_INTERVAL_IN_SECONDS" => Constants.HeartbeatIntervalInSeconds.ToString(),
             "HEARTBEAT_METRIC_NAME" => Constants.HeartbeatMetricName,
             "HEARTBEAT_NAMESPACE" => Constants.HeartbeatNamespace,
-            "LOG_GROUP" => Constants.BotName,
+            "LOG_GROUP" => logGroup.LogGroupName,
             "REGION" => region,
             _ => throw new ArgumentOutOfRangeException(nameof(token), token)
         };
