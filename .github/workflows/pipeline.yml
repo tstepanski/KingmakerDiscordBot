@@ -75,34 +75,6 @@ jobs:
       - name: "Make CDK Executable"
         run: "chmod +x CDK"
         working-directory: "CDK"
-      
-      - name: "Hash Files"
-        working-directory: "CDK"
-        run: |
-          $hasher = [System.Security.Cryptography.HashAlgorithm]::Create("SHA256");
-          $combinedBytes = New-Object System.Collections.Generic.List[byte];
-          
-          function HashThis {
-            param ([string]$FileName)
-            
-            $content = [System.IO.File]::ReadAllBytes($FileName);
-            $fileHash = $hasher.ComputeHash($content);
-            $combinedBytes.AddRange($fileHash);
-          }
-          
-          $applicationFiles = Get-ChildItem -Path "../Application" -File -Recurse | Sort-Object FullName;
-          
-          foreach ($file in $applicationFiles) {
-            HashThis $file.FullName
-          }
-          
-          HashThis "./user-data.yml";
-          
-          $finalHash = $hasher.ComputeHash($combinedBytes.ToArray());
-          $hex = [BitConverter]::ToString($finalHash) -replace "-", "";
-          $hashSuffix = $hex.Substring(0, 8);
-          
-          "HASH_SUFFIX=$hashSuffix" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append;
 
       - name: "Login"
         uses: "aws-actions/configure-aws-credentials@v4"
@@ -112,7 +84,7 @@ jobs:
           role-to-assume: "${{ secrets.AWS_ROLE_TO_ASSUME }}"
 
       - name: "Synthesize"
-        run: "cdk synth --app='./CDK' -c ARTIFACT_PATH='../Application' -c AWS_LINUX_AMI_ID='${{ secrets.AWS_LINUX_AMI }}' -c AWS_REGION='${{ secrets.AWS_REGION }}' -c DEV_IP='${{ secrets.DEV_IP }}' -c DISCORD_TOKEN_ARN='${{ secrets.DISCORD_TOKEN_ARN }}' -c HASH_SUFFIX='${{ env.HASH_SUFFIX }}' -c MAX_SPOT_PRICE='${{ secrets.MAX_SPOT_PRICE }}' -c VPC_CIDR='${{ secrets.VPC_CIDR }}'"
+        run: "cdk synth --app='./CDK' -c ARTIFACT_PATH='../Application' -c AWS_LINUX_AMI_ID='${{ secrets.AWS_LINUX_AMI }}' -c AWS_REGION='${{ secrets.AWS_REGION }}' -c DEV_IP='${{ secrets.DEV_IP }}' -c DISCORD_TOKEN_ARN='${{ secrets.DISCORD_TOKEN_ARN }}' -c MAX_SPOT_PRICE='${{ secrets.MAX_SPOT_PRICE }}' -c VPC_CIDR='${{ secrets.VPC_CIDR }}'"
         working-directory: "CDK"
 
       - name: "Compare"

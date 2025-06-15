@@ -6,15 +6,27 @@ namespace KingmakerDiscordBot.CDK;
 
 internal sealed class ApplicationAssetsStack : Stack
 {
-    public ApplicationAssetsStack(App application) : base(application, nameof(ApplicationAssetsStack))
+    public ApplicationAssetsStack(App application, Hasher hasher) : base(application, nameof(ApplicationAssetsStack))
     {
+        var artifactPath = this.GetContextOrThrow(Constants.ArtifactPathKey);
+        
+        AddFilesToHasher(hasher, artifactPath);
+        
         Bucket = CreateBucket(this);
-        Deployment = CreateDeployment(this, Bucket);
+        Deployment = CreateDeployment(this, Bucket, artifactPath);
     }
-    
+
     public Bucket Bucket { get; }
     
     public BucketDeployment Deployment { get; }
+
+    private static void AddFilesToHasher(Hasher hasher, string artifactPath)
+    {
+        foreach (var file in Directory.GetFiles(artifactPath))
+        {
+            hasher.AddFile(file);
+        }
+    }
 
     private static Bucket CreateBucket(ApplicationAssetsStack stack)
     {
@@ -31,9 +43,8 @@ internal sealed class ApplicationAssetsStack : Stack
         return new Bucket(stack, nameof(Bucket), properties);
     }
 
-    private static BucketDeployment CreateDeployment(ApplicationAssetsStack stack, Bucket bucket)
+    private static BucketDeployment CreateDeployment(ApplicationAssetsStack stack, Bucket bucket, string artifactPath)
     {
-        var artifactPath = stack.GetContextOrThrow(Constants.ArtifactPathKey);
         var applicationAsset = Source.Asset(artifactPath);
         
         var deploymentProperties = new BucketDeploymentProps

@@ -7,10 +7,11 @@ public static class Program
     public static void Main()
     {
         var application = new App();
+        var hasher = new Hasher();
 
-        var applicationAssetsStack = new ApplicationAssetsStack(application);
+        var applicationAssetsStack = new ApplicationAssetsStack(application, hasher);
         
-        _ = new BotStack(application, applicationAssetsStack.Bucket);
+        _ = new BotStack(application, applicationAssetsStack.Bucket, hasher);
 
         var synthesis = application.Synth();
 

@@ -15,15 +15,15 @@ internal sealed partial class BotStack : Stack
 {
     private static readonly Regex TokenRegex = TokenRegexFactory();
 
-    public BotStack(App application, IBucket bucket) : base(application, nameof(BotStack))
+    public BotStack(App application, IBucket bucket, Hasher hasher) : base(application, nameof(BotStack))
     {
         var vpc = CreateVpc(this);
         var securityGroup = CreateSecurityGroup(this, vpc);
         var logGroup = CreateLogGroup(this);
         var role = CreateRole(this);
         var tokenSecret = LookupTokenSecret(this);
-        var userData = CreateUserData(this, bucket, logGroup, tokenSecret);
-        var launchTemplate = CreateLaunchTemplate(this, role, securityGroup, userData);
+        var userData = CreateUserData(this, bucket, logGroup, tokenSecret, hasher);
+        var launchTemplate = CreateLaunchTemplate(this, role, securityGroup, userData, hasher);
 
         logGroup.GrantWrite(role);
         tokenSecret.GrantRead(role);
@@ -32,12 +32,15 @@ internal sealed partial class BotStack : Stack
         _ = CreateHeartbeatAlarm(this);
     }
 
-    private static UserData CreateUserData(BotStack stack, IBucket bucket, LogGroup logGroup, ISecret tokenSecret)
+    private static UserData CreateUserData(BotStack stack, IBucket bucket, LogGroup logGroup, ISecret tokenSecret,
+        Hasher hasher)
     {
         var region = stack.GetContextOrThrow(Constants.AwsRegion);
         var location = Assembly.GetExecutingAssembly().Location;
         var directory = Directory.GetParent(location);
         var path = Path.Join(directory!.FullName, "user-data.yml");
+
+        hasher.AddFile(path);
 
         var userData = File.ReadAllText(path);
 
@@ -158,14 +161,13 @@ internal sealed partial class BotStack : Stack
     }
 
     private static LaunchTemplate CreateLaunchTemplate(BotStack stack, Role role, SecurityGroup securityGroup,
-        UserData userData)
+        UserData userData, Hasher hasher)
     {
         var instanceType = InstanceType.Of(InstanceClass.T4G, InstanceSize.SMALL);
         var maximumSpotPriceRaw = stack.GetContextOrThrow(Constants.MaximumSpotPriceKey);
         var imageId = stack.GetContextOrThrow(Constants.ParentImageIdKey);
         var region = stack.GetContextOrThrow(Constants.AwsRegion);
         var maximumSpotPriceParsed = double.Parse(maximumSpotPriceRaw);
-        var versionHash = stack.GetContextOrThrow("HASH_SUFFIX");
 
         var machineImage = MachineImage.GenericLinux(new Dictionary<string, string>
         {
@@ -189,7 +191,7 @@ internal sealed partial class BotStack : Stack
             SecurityGroup = securityGroup,
             SpotOptions = spotOptions,
             UserData = userData,
-            VersionDescription = $"Hash: {versionHash}"
+            VersionDescription = $"Hash: {hasher}"
         };
 
         return new LaunchTemplate(stack, nameof(LaunchTemplate), properties);
