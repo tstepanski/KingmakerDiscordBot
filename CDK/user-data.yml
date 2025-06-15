@@ -26,7 +26,7 @@ write_files:
       HEARTBEAT__METRICNAME={{ HEARTBEAT_METRIC_NAME }}
       HEARTBEAT__NAMESPACE={{ HEARTBEAT_NAMESPACE }}
 
-  - path: /opt/cloudwatch-config.json
+  - path: /etc/amazon/amazon-cloudwatch-agent.json
     content: |
       {
         "agent": {
@@ -82,4 +82,6 @@ runcmd:
   - chmod +x /opt/kingmaker-discord-bot/Application
   - systemctl daemon-reload
   - systemctl enable kingmaker-discord-bot
+  - systemctl enable amazon-cloudwatch-agent
+  - systemctl start amazon-cloudwatch-agent
   - systemctl start kingmaker-discord-bot
