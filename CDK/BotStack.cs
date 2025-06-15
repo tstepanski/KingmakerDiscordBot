@@ -15,7 +15,7 @@ internal sealed partial class BotStack : Stack
 {
     private static readonly Regex TokenRegex = TokenRegexFactory();
 
-    public BotStack(App application, IBucket bucket, IVpc vpc, ISecurityGroup securityGroup, Hasher hasher) : 
+    public BotStack(App application, IBucket bucket, IVpc vpc, ISecurityGroup securityGroup, Hasher hasher) :
         base(application, nameof(BotStack))
     {
         var logGroup = CreateLogGroup(this);
@@ -24,13 +24,13 @@ internal sealed partial class BotStack : Stack
         var userData = CreateUserData(this, bucket, logGroup, tokenSecret, hasher);
         var launchTemplate = CreateLaunchTemplate(this, role, securityGroup, userData, hasher);
 
+        _ = CreateAutoScalingGroup(this, launchTemplate, vpc);
+        _ = CreateHeartbeatAlarm(this);
+
         bucket.GrantRead(role);
         logGroup.GrantWrite(role);
         logGroup.Grant(role, "logs:DescribeLogStreams");
         tokenSecret.GrantRead(role);
-
-        _ = CreateAutoScalingGroup(this, launchTemplate, vpc);
-        _ = CreateHeartbeatAlarm(this);
     }
 
     private static UserData CreateUserData(BotStack stack, IBucket bucket, LogGroup logGroup, ISecret tokenSecret,
@@ -141,7 +141,21 @@ internal sealed partial class BotStack : Stack
             VpcSubnets = subnetSelection
         };
 
-        return new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
+        var autoScalingGroup = new AutoScalingGroup(stack, nameof(AutoScalingGroup), properties);
+        var lowLevelConstruct = (CfnAutoScalingGroup)autoScalingGroup.Node.DefaultChild!;
+
+        lowLevelConstruct.CfnOptions.UpdatePolicy = new CfnUpdatePolicy
+        {
+            AutoScalingRollingUpdate = new CfnAutoScalingRollingUpdate
+            {
+                MinInstancesInService = 0,
+                MaxBatchSize = 1,
+                PauseTime = "PT5S",
+                WaitOnResourceSignals = true
+            }
+        };
+
+        return autoScalingGroup;
     }
 
     private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret,
