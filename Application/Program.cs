@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using KingmakerDiscordBot.Application.Configuration;
+using KingmakerDiscordBot.Application.Discord;
 using KingmakerDiscordBot.Application.General;
-using KingmakerDiscordBot.Application.Logic;
 using KingmakerDiscordBot.Application.Observability;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;

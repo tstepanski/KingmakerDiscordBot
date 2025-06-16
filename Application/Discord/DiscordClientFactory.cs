@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using InternalDiscordConfiguration = KingmakerDiscordBot.Application.Configuration.Discord; 
 
-namespace KingmakerDiscordBot.Application.Logic;
+namespace KingmakerDiscordBot.Application.Discord;
 
 internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, RestClientProvider restClientProvider,
     IAmazonSecretsManager secretsManager, IOptions<InternalDiscordConfiguration> configuration, 

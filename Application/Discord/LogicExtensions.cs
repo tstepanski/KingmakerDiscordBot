@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using InternalDiscordConfiguration = KingmakerDiscordBot.Application.Configuration.Discord; 
 
-namespace KingmakerDiscordBot.Application.Logic;
+namespace KingmakerDiscordBot.Application.Discord;
 
 internal static class LogicExtensions
 {

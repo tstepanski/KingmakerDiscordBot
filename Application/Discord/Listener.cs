@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 
-namespace KingmakerDiscordBot.Application.Logic;
+namespace KingmakerDiscordBot.Application.Discord;
 
 internal sealed class Listener(IDiscordClientFactory clientFactory) : BackgroundService
 {

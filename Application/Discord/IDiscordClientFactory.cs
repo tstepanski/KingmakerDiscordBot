@@ -1,6 +1,6 @@
 ﻿using Discord;
 
-namespace KingmakerDiscordBot.Application.Logic;
+namespace KingmakerDiscordBot.Application.Discord;
 
 internal interface IDiscordClientFactory
 {
