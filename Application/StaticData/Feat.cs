@@ -87,25 +87,4 @@ internal sealed class Feat : AbstractLookup<Feat>, ILookup<Feat>, IHasTraits
     public string? Prerequisite { get; }
 
     public ImmutableSortedSet<Trait> Traits { get; }
-
-    public static IEnumerable<Feat> GetAll()
-    {
-        yield return CivilService;
-        yield return CooperativeLeadership;
-        yield return CrushDissent;
-        yield return EndureAnarchy;
-        yield return FameAndFortune;
-        yield return FortifiedFiefs;
-        yield return FreeAndFair;
-        yield return InsiderTrading;
-        yield return InspiringEntertainment;
-        yield return KingdomAssurance;
-        yield return LiquidateResources;
-        yield return MuddleThrough;
-        yield return PracticalMagic;
-        yield return PullTogether;
-        yield return QualityOfLife;
-        yield return QuickRecovery;
-        yield return SkillTrainingKingdom;
-    }
 }

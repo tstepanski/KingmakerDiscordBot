@@ -33,15 +33,6 @@ internal sealed class Charter : AbstractLookup<Charter>, ILookup<Charter>
 
     public Ability? Flaws { get; }
 
-    public static IEnumerable<Charter> GetAll()
-    {
-        yield return Conquest;
-        yield return Expansion;
-        yield return Exploration;
-        yield return Grant;
-        yield return Open;
-    }
-
     public void Deconstruct(out string name, out Ability? boost, out Ability? flaws, out string description)
     {
         name = Name;
