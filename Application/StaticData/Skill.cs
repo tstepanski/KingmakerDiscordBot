@@ -1,4 +1,6 @@
-﻿namespace KingmakerDiscordBot.Application.StaticData;
+﻿using System.Collections.Immutable;
+
+namespace KingmakerDiscordBot.Application.StaticData;
 
 internal sealed class Skill : AbstractLookup<Skill>, ILookup<Skill>
 {
@@ -66,6 +68,10 @@ internal sealed class Skill : AbstractLookup<Skill>, ILookup<Skill>
         "Wilderness measures how well the kingdom manages its natural resources, integrates with the natural ecosystem, and handles dangerous wildlife. It also reflects the kingdom’s ability to anticipate, prevent, and recover from natural disasters, in much the same way the Defense skill protects against other threats.",
         Ability.Stability, 530);
 
+    private static readonly ImmutableSortedDictionary<Ability, ImmutableSortedSet<Skill>> SkillsByAbility = GetAll()
+        .GroupBy(skill => skill.RelatedAbility)
+        .ToImmutableSortedDictionary(skills => skills.Key, skills => skills.ToImmutableSortedSet());
+
     private Skill(string name, string description, Ability relatedAbility, ushort page) : base(name, description,
         Source.KingmakerAdventurePath, page)
     {
@@ -73,6 +79,11 @@ internal sealed class Skill : AbstractLookup<Skill>, ILookup<Skill>
     }
 
     public Ability RelatedAbility { get; }
+
+    public static IEnumerable<Skill> GetAllByAbility(Ability ability)
+    {
+        return SkillsByAbility.GetValueOrDefault(ability, ImmutableSortedSet<Skill>.Empty);
+    }
 
     public static IEnumerable<Skill> GetAll()
     {
