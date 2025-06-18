@@ -8,8 +8,6 @@ internal sealed class Listener(IDiscordClientFactory clientFactory) : Background
     {
         var oneMinute = TimeSpan.FromMinutes(1);
         var client = await clientFactory.CreateAsync(stoppingToken);
-        
-        await client.StartAsync();
 
         while (stoppingToken.IsCancellationRequested is false)
         {

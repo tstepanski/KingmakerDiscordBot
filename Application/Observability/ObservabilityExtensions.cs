@@ -21,10 +21,8 @@ internal static class ObservabilityExtensions
         AWSXRayRecorder.InitializeInstance(configuration);
         AWSSDKHandler.RegisterXRayForAllServices();
 
-        var heartbeatConfiguration = configuration.GetSection("Heartbeat");
-
         return serviceCollection
-            .Configure<Heartbeat>(heartbeatConfiguration)
+            .Configure<Heartbeat>(configuration, "Heartbeat")
             .AddAWSService<IAmazonCloudWatch>()
             .AddHostedService<CloudwatchHeartbeatService>()
             .AddSingleton<IInstanceIdHelper, InstanceIdHelper>()

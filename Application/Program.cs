@@ -3,6 +3,7 @@ using KingmakerDiscordBot.Application.Configuration;
 using KingmakerDiscordBot.Application.Discord;
 using KingmakerDiscordBot.Application.General;
 using KingmakerDiscordBot.Application.Observability;
+using KingmakerDiscordBot.Application.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
@@ -23,7 +24,8 @@ public static class Program
             .ConfigureServices(services => services
                 .AddAws(configuration)
                 .AddObservability(configuration)
-                .AddLogic(configuration))
+                .AddLogic(configuration)
+                .AddData(configuration))
             .Build();
 
         await host.RunAsync();
