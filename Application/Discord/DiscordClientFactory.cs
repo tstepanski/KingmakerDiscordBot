@@ -7,18 +7,18 @@ using Discord.WebSocket;
 using KingmakerDiscordBot.Application.Observability;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using InternalDiscordConfiguration = KingmakerDiscordBot.Application.Configuration.Discord; 
+using InternalDiscordConfiguration = KingmakerDiscordBot.Application.Configuration.Discord;
 
 namespace KingmakerDiscordBot.Application.Discord;
 
 internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, RestClientProvider restClientProvider,
-    IAmazonSecretsManager secretsManager, IOptions<InternalDiscordConfiguration> configuration, 
+    IAmazonSecretsManager secretsManager, IOptions<InternalDiscordConfiguration> configuration,
     ILogger<DiscordSocketClient> logger) : IDiscordClientFactory, IDisposable
 {
-    private DiscordSocketClient? _cachedInstance;
+    private ISocketClientProxy? _cachedInstance;
     private readonly SemaphoreSlim _lock = new(1, 1);
-    
-    public async Task<DiscordSocketClient> CreateAsync(CancellationToken cancellationToken)
+
+    public async Task<ISocketClientProxy> CreateAsync(CancellationToken cancellationToken)
     {
         if (_cachedInstance is not null)
         {
@@ -30,7 +30,7 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
         try
         {
             _cachedInstance ??= await CreateNewAsync(cancellationToken);
-            
+
             logger.LogInformation("Created new discord client");
 
             return _cachedInstance;
@@ -41,14 +41,13 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
         }
     }
 
-    private async Task<DiscordSocketClient> CreateNewAsync(CancellationToken cancellationToken)
+    private async Task<ISocketClientProxy> CreateNewAsync(CancellationToken cancellationToken)
     {
         var request = new GetSecretValueRequest
         {
-            
             SecretId = configuration.Value.TokenArn
         };
-        
+
         var response = await secretsManager.GetSecretValueAsync(request, cancellationToken);
         var token = response.SecretString.Trim();
 
@@ -61,11 +60,10 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
             WebSocketProvider = webSocketProvider
         };
 
-        var client = new DiscordSocketClient(discordConfiguration);
+        var underlyingClient = new DiscordSocketClient(discordConfiguration);
+        var client = new SocketClientProxy(underlyingClient);
 
         client.Log += logger.Log;
-
-        await client.LoginAsync(TokenType.Bot, token);
 
         client.Ready += () =>
         {
@@ -73,7 +71,8 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
 
             return Task.CompletedTask;
         };
-        
+
+        await underlyingClient.LoginAsync(TokenType.Bot, token);
         await client.StartAsync();
 
         return client;

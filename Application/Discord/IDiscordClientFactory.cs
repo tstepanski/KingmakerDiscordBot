@@ -1,8 +1,6 @@
-﻿using Discord.WebSocket;
-
-namespace KingmakerDiscordBot.Application.Discord;
+﻿namespace KingmakerDiscordBot.Application.Discord;
 
 internal interface IDiscordClientFactory
 {
-    Task<DiscordSocketClient> CreateAsync(CancellationToken cancellationToken);
+    Task<ISocketClientProxy> CreateAsync(CancellationToken cancellationToken);
 }
