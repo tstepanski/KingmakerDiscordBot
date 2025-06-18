@@ -9,7 +9,6 @@ using Discord.Net.WebSockets;
 using KingmakerDiscordBot.Application.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace KingmakerDiscordBot.Application.Observability;
 

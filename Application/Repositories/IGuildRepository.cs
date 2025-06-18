@@ -1,5 +1,3 @@
-using KingmakerDiscordBot.Application.Entities;
-
 namespace KingmakerDiscordBot.Application.Repositories;
 
 internal interface IGuildRepository
