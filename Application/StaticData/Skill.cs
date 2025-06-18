@@ -84,24 +84,4 @@ internal sealed class Skill : AbstractLookup<Skill>, ILookup<Skill>
     {
         return SkillsByAbility.GetValueOrDefault(ability, ImmutableSortedSet<Skill>.Empty);
     }
-
-    public static IEnumerable<Skill> GetAll()
-    {
-        yield return Agriculture;
-        yield return Arts;
-        yield return Boating;
-        yield return Defense;
-        yield return Engineering;
-        yield return Exploration;
-        yield return Folklore;
-        yield return Industry;
-        yield return Intrigue;
-        yield return Magic;
-        yield return Politics;
-        yield return Scholarship;
-        yield return Statecraft;
-        yield return Trade;
-        yield return Warfare;
-        yield return Wilderness;
-    }
 }

@@ -25,12 +25,4 @@ internal sealed class Heartland : AbstractLookup<Heartland>, ILookup<Heartland>
     }
 
     public Ability Boost { get; }
-
-    public static IEnumerable<Heartland> GetAll()
-    {
-        yield return ForestOrSwamp;
-        yield return HillOrPlain;
-        yield return LakeOrRiver;
-        yield return MountainOrRuins;
-    }
 }

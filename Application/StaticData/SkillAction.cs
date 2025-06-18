@@ -300,36 +300,4 @@ internal sealed class SkillAction : AbstractLookup<SkillAction>, ILookup<SkillAc
     {
         return ActionsBySkill.GetValueOrDefault(skill, ImmutableSortedSet<SkillAction>.Empty);
     }
-
-    public static IEnumerable<SkillAction> GetAll()
-    {
-        yield return EstablishFarmland;
-        yield return HarvestCrops;
-        yield return CraftLuxuries;
-        yield return CreateMasterpiece;
-        yield return GoFishing;
-        yield return FortifyHex;
-        yield return ProvideCare;
-        yield return BuildRoads;
-        yield return Demolish;
-        yield return EstablishWorkSite;
-        yield return Irrigation;
-        yield return HireAdventurers;
-        yield return CelebrateHoliday;
-        yield return TradeCommodities;
-        yield return RelocateCapital;
-        yield return Infiltration;
-        yield return ClandestineBusiness;
-        yield return SupernaturalSolution;
-        yield return Prognostication;
-        yield return ImproveLifestyle;
-        yield return CreativeSolution;
-        yield return RequestForeignAid;
-        yield return SendDiplomaticEnvoy;
-        yield return CapitalInvestment;
-        yield return ManageTradeAgreements;
-        yield return PurchaseCommodities;
-        yield return CollectTaxes;
-        yield return GatherLivestock;
-    }
 }

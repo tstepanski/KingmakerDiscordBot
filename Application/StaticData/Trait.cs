@@ -37,17 +37,4 @@ internal sealed class Trait : AbstractLookup<Trait>, ILookup<Trait>
     private Trait(string name, string description, Source source, ushort page) : base(name, description, source, page)
     {
     }
-
-    public static IEnumerable<Trait> GetAll()
-    {
-        yield return Region;
-        yield return Downtime;
-        yield return Leadership;
-        yield return Civic;
-        yield return Commerce;
-        yield return Fortune;
-        yield return General;
-        yield return Kingdom;
-
-    }
 }

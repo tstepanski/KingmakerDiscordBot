@@ -42,14 +42,4 @@ internal sealed class Government : AbstractLookup<Government>, ILookup<Governmen
     public ImmutableSortedSet<Skill> Proficiencies { get; }
 
     public Feat BonusFeat { get; }
-
-    public static IEnumerable<Government> GetAll()
-    {
-        yield return Despotism;
-        yield return Feudalism;
-        yield return Oligarchy;
-        yield return Republic;
-        yield return Thaumocracy;
-        yield return Yeomanry;
-    }
 }

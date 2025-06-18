@@ -17,12 +17,4 @@ internal sealed class Ability : AbstractLookup<Ability>, ILookup<Ability>
     private Ability(string name, string description) : base(name, description, Source.KingmakerAdventurePath, 507)
     {
     }
-
-    public static IEnumerable<Ability> GetAll()
-    {
-        yield return Culture;
-        yield return Economy;
-        yield return Loyalty;
-        yield return Stability;
-    }
 }
