@@ -3,7 +3,7 @@ using KingmakerDiscordBot.Application.Discord;
 
 namespace KingmakerDiscordBot.Application.Listeners.Contracts;
 
-internal interface IRoleUpdatedListener
+internal interface IRoleUpdatedListener : IListener
 {
     Task OnRoleUpdated(IDiscordRestClientProxy client, SocketRole before, SocketRole after,
         CancellationToken cancellationToken);

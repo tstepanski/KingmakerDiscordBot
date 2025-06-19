@@ -5,7 +5,7 @@ using KingmakerDiscordBot.Application.Discord;
 
 namespace KingmakerDiscordBot.Application.Listeners.Contracts;
 
-internal interface IPollVoteRemovedListener
+internal interface IPollVoteRemovedListener : IListener
 {
     Task OnPollVoteRemoved(IDiscordRestClientProxy client, Cacheable<IUser, ulong> user,
         Cacheable<ISocketMessageChannel, IRestMessageChannel, IMessageChannel, ulong> channel,

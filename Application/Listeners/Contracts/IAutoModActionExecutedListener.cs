@@ -4,7 +4,7 @@ using KingmakerDiscordBot.Application.Discord;
 
 namespace KingmakerDiscordBot.Application.Listeners.Contracts;
 
-internal interface IAutoModActionExecutedListener
+internal interface IAutoModActionExecutedListener : IListener
 {
     Task OnAutoModActionExecuted(IDiscordRestClientProxy client, SocketGuild guild, AutoModRuleAction action,
         AutoModActionExecutedData data,

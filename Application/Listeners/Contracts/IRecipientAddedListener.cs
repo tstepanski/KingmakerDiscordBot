@@ -3,7 +3,7 @@ using KingmakerDiscordBot.Application.Discord;
 
 namespace KingmakerDiscordBot.Application.Listeners.Contracts;
 
-internal interface IRecipientAddedListener
+internal interface IRecipientAddedListener : IListener
 {
     Task OnRecipientAdded(IDiscordRestClientProxy client, SocketGroupUser socketGroupUser,
         CancellationToken cancellationToken);

@@ -4,7 +4,7 @@ using KingmakerDiscordBot.Application.Discord;
 
 namespace KingmakerDiscordBot.Application.Listeners.Contracts;
 
-internal interface IGuildMemberUpdatedListener
+internal interface IGuildMemberUpdatedListener : IListener
 {
     Task OnGuildMemberUpdated(IDiscordRestClientProxy client, Cacheable<SocketGuildUser, ulong> cachedUser,
         SocketGuildUser updatedUser, CancellationToken cancellationToken);

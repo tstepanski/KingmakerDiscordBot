@@ -3,7 +3,7 @@ using KingmakerDiscordBot.Application.Discord;
 
 namespace KingmakerDiscordBot.Application.Listeners.Contracts;
 
-internal interface IJoinedGuildListener
+internal interface IJoinedGuildListener : IListener
 {
     Task OnJoinedGuild(IDiscordRestClientProxy client, SocketGuild socketGuild, CancellationToken cancellationToken);
 }

@@ -3,7 +3,7 @@ using KingmakerDiscordBot.Application.Discord;
 
 namespace KingmakerDiscordBot.Application.Listeners.Contracts;
 
-internal interface IWebhooksUpdatedListener
+internal interface IWebhooksUpdatedListener : IListener
 {
     Task OnWebhooksUpdated(IDiscordRestClientProxy client, SocketGuild guild, SocketChannel channel,
         CancellationToken cancellationToken);
