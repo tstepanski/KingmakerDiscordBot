@@ -385,19 +385,19 @@ internal sealed class DiscordRestClientProxy(DiscordRestClient client) : IDiscor
         add => client.Log += value;
         remove => client.Log -= value;
     }
-    
+
     public event Func<Task> LoggedIn
     {
         add => client.LoggedIn += value;
         remove => client.LoggedIn -= value;
     }
-    
+
     public event Func<Task> LoggedOut
     {
         add => client.LoggedOut += value;
         remove => client.LoggedOut -= value;
     }
-    
+
     public event Func<string, string, double, Task> SentRequest
     {
         add => client.SentRequest += value;

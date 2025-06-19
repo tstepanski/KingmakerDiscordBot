@@ -9,11 +9,8 @@ internal static partial class StringExtensions
     // ReSharper disable once IdentifierTypo
     public static string Commandify(this string value)
     {
-        if (value.Length > 32)
-        {
-            throw new ArgumentException("Command names may not exceed 32 characters", nameof(value));
-        }
-        
+        if (value.Length > 32) throw new ArgumentException("Command names may not exceed 32 characters", nameof(value));
+
         return NamePrettifier.Replace(value, "-$1").ToLower();
     }
 

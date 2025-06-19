@@ -32,7 +32,7 @@ internal sealed class VpcStack : Stack
             MaxAzs = 1,
             NatGateways = 0,
             SubnetConfiguration = [subnetConfiguration],
-            VpcName = Constants.BotName,
+            VpcName = Constants.BotName
         };
 
         return new Vpc(stack, nameof(Vpc), properties);

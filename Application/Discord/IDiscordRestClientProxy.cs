@@ -5,6 +5,7 @@ namespace KingmakerDiscordBot.Application.Discord;
 
 internal interface IDiscordRestClientProxy : IDiscordClient
 {
+    LoginState LoginState { get; }
     bool IsValidHttpInteraction(string publicKey, string signature, string timestamp, string body);
     Task<RestSelfUser> GetCurrentUserAsync(RequestOptions? options = null);
     Task<RestGuildUser> GetCurrentUserGuildMemberAsync(ulong guildId, RequestOptions? options = null);
@@ -22,9 +23,9 @@ internal interface IDiscordRestClientProxy : IDiscordClient
     Task<RestInteraction> ParseHttpInteractionAsync(string publicKey, string signature, string timestamp, string body,
         Func<InteractionProperties, bool> doApiCallOnCreation);
 
-    Task<RestGlobalCommand> CreateGlobalCommand(ApplicationCommandProperties properties, 
+    Task<RestGlobalCommand> CreateGlobalCommand(ApplicationCommandProperties properties,
         RequestOptions? options = null);
-    
+
     Task<IReadOnlyCollection<RestGlobalCommand>> GetGlobalApplicationCommands(bool withLocalizations, string locale,
         RequestOptions? options = null);
 
@@ -68,8 +69,6 @@ internal interface IDiscordRestClientProxy : IDiscordClient
 
     Task<RoleConnection> ModifyUserApplicationRoleConnectionAsync(ulong applicationId,
         RoleConnectionProperties roleConnection, RequestOptions? options = null);
-
-    LoginState LoginState { get; }
 
     event Func<LogMessage, Task> Log;
 

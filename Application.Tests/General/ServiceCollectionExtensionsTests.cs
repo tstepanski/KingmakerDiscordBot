@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using KingmakerDiscordBot.Application.General;
+﻿using KingmakerDiscordBot.Application.General;
 using KingmakerDiscordBot.Application.Listeners.Contracts;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KingmakerDiscordBot.Application.Tests.General;
 
@@ -22,9 +22,9 @@ public sealed class ServiceCollectionExtensionsTests
         var serviceCollection = new ServiceCollection();
         var result = serviceCollection.RegisterAll(configuration);
 
-        Assert.IsType<IServiceCollection>(result, exactMatch: false);
+        Assert.IsType<IServiceCollection>(result, false);
     }
-    
+
     [Fact]
     public void RegisterAll_GivenConfiguration_Provides1Listener()
     {
@@ -44,7 +44,7 @@ public sealed class ServiceCollectionExtensionsTests
         var result = serviceProvider
             .GetServices<IListener>()
             .Count();
-        
+
         Assert.Equal(1, result);
     }
 }

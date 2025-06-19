@@ -118,7 +118,7 @@ internal static class ServiceCollectionExtensions
                 {
                     LogGroup = awsConfiguration.LogGroup,
                     Region = awsConfiguration.Region,
-                    FlushTimeout = TimeSpan.FromSeconds(5),
+                    FlushTimeout = TimeSpan.FromSeconds(5)
                 };
 
                 builder

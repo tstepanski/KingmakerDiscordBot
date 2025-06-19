@@ -14,7 +14,7 @@ write_files:
       
       [Install]
       WantedBy=multi-user.target
-  
+
   - path: /etc/profile.d/envvars.sh
     content: |
       AWS_REGION={{ REGION }}

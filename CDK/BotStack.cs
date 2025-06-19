@@ -15,7 +15,7 @@ internal sealed partial class BotStack : Stack
 {
     private static readonly Regex TokenRegex = TokenRegexFactory();
 
-    public BotStack(App application, IBucket bucket, IVpc vpc, ISecurityGroup securityGroup, Hasher hasher) : 
+    public BotStack(App application, IBucket bucket, IVpc vpc, ISecurityGroup securityGroup, Hasher hasher) :
         base(application, nameof(BotStack))
     {
         var logGroup = CreateLogGroup(this);

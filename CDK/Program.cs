@@ -11,7 +11,7 @@ public static class Program
 
         var vpcStack = new VpcStack(application);
         var applicationAssetsStack = new ApplicationAssetsStack(application, hasher);
-        
+
         _ = new BotStack(application, applicationAssetsStack.Bucket, vpcStack.Vpc, vpcStack.SecurityGroup, hasher);
 
         var synthesis = application.Synth();

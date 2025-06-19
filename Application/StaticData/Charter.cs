@@ -22,7 +22,7 @@ internal sealed class Charter : AbstractLookup<Charter>, ILookup<Charter>
         " If you would prefer to be truly free agents and trailblazers staking your own claim, you can simply choose an open charter with no restrictions—and no direct support. In this case, Lady Jamandi applauds your bravery and self-confidence, but warns that establishing a kingdom is no small task. An open charter grants a single ability boost to any ability score, and the new nation has no built-in ability flaw.",
         null, null, 509);
 
-    private Charter(string name, string description, Ability? boost, Ability? flaws, ushort page = 508) : base(name, 
+    private Charter(string name, string description, Ability? boost, Ability? flaws, ushort page = 508) : base(name,
         description, Source.KingmakerAdventurePath, page)
     {
         Boost = boost;

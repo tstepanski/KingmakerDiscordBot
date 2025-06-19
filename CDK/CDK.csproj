@@ -11,13 +11,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Amazon.CDK.Lib" Version="2.201.0" />
+        <PackageReference Include="Amazon.CDK.Lib" Version="2.201.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="user-data.yml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
+        <None Update="user-data.yml">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 </Project>

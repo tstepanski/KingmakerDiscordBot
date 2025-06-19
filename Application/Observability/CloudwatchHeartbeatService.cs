@@ -30,11 +30,11 @@ internal sealed class CloudwatchHeartbeatService(IAmazonCloudWatch cloudWatch, I
     private async Task SendHeartbeat(CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
-            
+
         using var scope = logger.BeginScope($"Heartbeat: {now:O}");
-            
+
         logger.LogDebug("Sending");
-        
+
         var datum = new MetricDatum
         {
             MetricName = settings.Value.MetricName,
@@ -42,15 +42,15 @@ internal sealed class CloudwatchHeartbeatService(IAmazonCloudWatch cloudWatch, I
             Unit = StandardUnit.Count,
             Value = 1
         };
-            
+
         var request = new PutMetricDataRequest
         {
             MetricData = [datum],
             Namespace = settings.Value.Namespace
         };
-            
+
         await cloudWatch.PutMetricDataAsync(request, cancellationToken);
-            
+
         logger.LogDebug("Sent");
     }
 }

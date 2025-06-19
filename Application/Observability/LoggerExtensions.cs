@@ -10,7 +10,7 @@ internal static class LoggerExtensions
         var logLevel = Convert(message.Severity);
 
         logger.Log(logLevel, message.Exception, "Discord.Net: {Source}: {Message}", message.Source, message.Message);
-        
+
         return Task.CompletedTask;
     }
 

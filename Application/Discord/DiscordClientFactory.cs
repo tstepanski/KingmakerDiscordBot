@@ -15,15 +15,12 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
     IAmazonSecretsManager secretsManager, IOptions<InternalDiscordConfiguration> configuration,
     ILogger<DiscordSocketClient> logger) : IDiscordClientFactory, IDisposable
 {
-    private ISocketClientProxy? _cachedInstance;
     private readonly SemaphoreSlim _lock = new(1, 1);
+    private ISocketClientProxy? _cachedInstance;
 
     public async Task<ISocketClientProxy> CreateAsync(CancellationToken cancellationToken)
     {
-        if (_cachedInstance is not null)
-        {
-            return _cachedInstance;
-        }
+        if (_cachedInstance is not null) return _cachedInstance;
 
         await _lock.WaitAsync(cancellationToken);
 
@@ -39,6 +36,12 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
         {
             _lock.Release();
         }
+    }
+
+    public void Dispose()
+    {
+        _cachedInstance?.Dispose();
+        _lock.Dispose();
     }
 
     private async Task<ISocketClientProxy> CreateNewAsync(CancellationToken cancellationToken)
@@ -75,11 +78,5 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
         await underlyingClient.LoginAsync(TokenType.Bot, token);
 
         return client;
-    }
-
-    public void Dispose()
-    {
-        _cachedInstance?.Dispose();
-        _lock.Dispose();
     }
 }

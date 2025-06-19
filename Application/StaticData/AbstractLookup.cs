@@ -9,12 +9,6 @@ namespace KingmakerDiscordBot.Application.StaticData;
 internal abstract class AbstractLookup<T>(string name, string description, Source source, ushort page) :
     ISourcedInformation<T> where T : AbstractLookup<T>, ILookup<T>
 {
-    // ReSharper disable StaticMemberInGenericType
-    private static readonly Lazy<ImmutableSortedSet<T>> All;
-
-    private static readonly Lazy<ImmutableSortedDictionary<string, T>> ReferencesByName;
-    // ReSharper restore StaticMemberInGenericType
-
     static AbstractLookup()
     {
         var thisType = typeof(T);
@@ -30,10 +24,7 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
                 .Cast<T>()
                 .ToImmutableSortedSet();
 
-            if (all.IsEmpty)
-            {
-                throw new InvalidOperationException($"{typeName} has no discernible values");
-            }
+            if (all.IsEmpty) throw new InvalidOperationException($"{typeName} has no discernible values");
 
             return all;
         }, LazyThreadSafetyMode.ExecutionAndPublication);
@@ -54,11 +45,16 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
 
     public ushort Page { get; } = page;
 
-    // ReSharper disable StaticMemberInGenericType
-    public static string TypeCommandName { get; }
+    public bool Equals(T? other)
+    {
+        return other is not null &&
+               ReferenceEquals(this, other);
+    }
 
-    public static string TypePrettyName { get; }
-    // ReSharper restore StaticMemberInGenericType
+    public int CompareTo(T? other)
+    {
+        return StringComparer.OrdinalIgnoreCase.Compare(Name, other?.Name);
+    }
 
     public static SlashCommandProperties SetupSlashCommand()
     {
@@ -67,11 +63,11 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
             .WithDescription($"Describes a specific {TypePrettyName.ToLower()}")
             .WithContextTypes(InteractionContextType.Guild)
             .WithIntegrationTypes(ApplicationIntegrationType.GuildInstall);
-        
+
         if (T.ManyCommandPartition is null)
         {
             var options = CreateOptions(All.Value);
-            
+
             commandBuilder.AddOption(options);
         }
         else
@@ -81,12 +77,9 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
                 .GroupBy(T.ManyCommandPartition.ValueOfFunction)
                 .Select(group => CreatePartitionOption(group.Key, group));
 
-            foreach (var option in options)
-            {
-                commandBuilder.AddOption(option);
-            }
+            foreach (var option in options) commandBuilder.AddOption(option);
         }
-        
+
         return commandBuilder.Build();
     }
 
@@ -94,7 +87,7 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
         IEnumerable<T> references)
     {
         var commandName = partitionKey.Commandify();
-        
+
         var subCommand = new SlashCommandOptionBuilder()
             .WithName(commandName)
             .WithDescription($"Describe a {partitionKey.ToLower()} {TypePrettyName.ToLower()}")
@@ -114,19 +107,10 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
             .WithDescription($"The {TypePrettyName.ToLower()} of which you wish described")
             .WithRequired(true)
             .WithType(ApplicationCommandOptionType.String);
-        
-        foreach (var reference in references)
-        {
-            options.AddChoice(reference.Name, reference.Name);
-        }
+
+        foreach (var reference in references) options.AddChoice(reference.Name, reference.Name);
 
         return options;
-    }
-
-    public bool Equals(T? other)
-    {
-        return other is not null &&
-               ReferenceEquals(this, other);
     }
 
     public static T FromName(string name)
@@ -145,10 +129,7 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
 
     public static bool TryParse(string? name, [NotNullWhen(true)] out T? value)
     {
-        if (name is not null)
-        {
-            return ReferencesByName.Value.TryGetValue(name, out value);
-        }
+        if (name is not null) return ReferencesByName.Value.TryGetValue(name, out value);
 
         value = null;
 
@@ -165,11 +146,6 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
         return Name.GetHashCode();
     }
 
-    public int CompareTo(T? other)
-    {
-        return StringComparer.OrdinalIgnoreCase.Compare(Name, other?.Name);
-    }
-
     public sealed override bool Equals(object? other)
     {
         return Equals(other as T);
@@ -184,4 +160,16 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
     {
         return !Equals(left, right);
     }
+
+    // ReSharper disable StaticMemberInGenericType
+    private static readonly Lazy<ImmutableSortedSet<T>> All;
+
+    private static readonly Lazy<ImmutableSortedDictionary<string, T>> ReferencesByName;
+    // ReSharper restore StaticMemberInGenericType
+
+    // ReSharper disable StaticMemberInGenericType
+    public static string TypeCommandName { get; }
+
+    public static string TypePrettyName { get; }
+    // ReSharper restore StaticMemberInGenericType
 }

@@ -37,7 +37,7 @@ internal sealed class TracedWebSocketClient(IWebSocketClient client) : IWebSocke
         return PerformRootOperationAsync("WebSocket.Disconnect", async () =>
         {
             AWSXRayRecorder.Instance.AddAnnotation("WebSocket.CloseCode", closeCode);
-            
+
             await client.DisconnectAsync(closeCode);
         });
     }

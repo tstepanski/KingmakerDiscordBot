@@ -7,6 +7,6 @@ namespace KingmakerDiscordBot.Application.Listeners.Contracts;
 internal interface IVoiceChannelStatusUpdatedListener : IListener
 {
     Task OnVoiceChannelStatusUpdated(IDiscordRestClientProxy client,
-        Cacheable<SocketVoiceChannel, ulong> cachedVoiceChannel, string previousStatus, string currentStatus, 
+        Cacheable<SocketVoiceChannel, ulong> cachedVoiceChannel, string previousStatus, string currentStatus,
         CancellationToken cancellationToken);
 }

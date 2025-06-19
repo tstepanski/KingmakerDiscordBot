@@ -280,6 +280,12 @@ internal sealed class SkillAction : AbstractLookup<SkillAction>, ILookup<SkillAc
 
     public ImmutableSortedSet<Trait> Traits { get; }
 
+    public static ManyCommandPartition<SkillAction>? ManyCommandPartition { get; } = new()
+    {
+        Name = "Related Skill",
+        ValueOfFunction = action => action.RelatedSkill.Name
+    };
+
     public void Deconstruct(out string name, out string description, out Source source, out ushort page,
         out Skill relatedSkill, out bool trained, out string? requirements, out string criticalSuccess,
         out string success, out string failure, out string criticalFailure, out ImmutableSortedSet<Trait> traits)
@@ -302,10 +308,4 @@ internal sealed class SkillAction : AbstractLookup<SkillAction>, ILookup<SkillAc
     {
         return ActionsBySkill.Value.GetValueOrDefault(skill, ImmutableSortedSet<SkillAction>.Empty);
     }
-
-    public static ManyCommandPartition<SkillAction>? ManyCommandPartition { get; } = new()
-    {
-        Name = "Related Skill",
-        ValueOfFunction = action => action.RelatedSkill.Name
-    };
 }

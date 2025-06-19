@@ -8,7 +8,7 @@ internal sealed class OptionalJsonConverterFactory : JsonConverterFactory
 {
     public override bool CanConvert(Type typeToConvert)
     {
-        return typeToConvert.IsGenericType && 
+        return typeToConvert.IsGenericType &&
                typeToConvert.GetGenericTypeDefinition() == typeof(Optional<>);
     }
 
@@ -16,7 +16,7 @@ internal sealed class OptionalJsonConverterFactory : JsonConverterFactory
     {
         var elementType = type.GetGenericArguments()[0];
         var converterType = typeof(OptionalJsonConverter<>).MakeGenericType(elementType);
-        
+
         return (JsonConverter?)Activator.CreateInstance(converterType);
     }
 }
