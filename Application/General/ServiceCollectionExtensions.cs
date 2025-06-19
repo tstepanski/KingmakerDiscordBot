@@ -10,12 +10,14 @@ using Discord.Net.Rest;
 using Discord.Net.WebSockets;
 using KingmakerDiscordBot.Application.Configuration;
 using KingmakerDiscordBot.Application.Discord;
+using KingmakerDiscordBot.Application.Listeners;
+using KingmakerDiscordBot.Application.Listeners.Contracts;
 using KingmakerDiscordBot.Application.Observability;
 using KingmakerDiscordBot.Application.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using InternalDiscordConfiguration = KingmakerDiscordBot.Application.Configuration.Discord; 
+using InternalDiscordConfiguration = KingmakerDiscordBot.Application.Configuration.Discord;
 
 namespace KingmakerDiscordBot.Application.General;
 
@@ -31,8 +33,19 @@ internal static class ServiceCollectionExtensions
         {
             Region = region
         };
-        
-        return serviceCollection
+
+        var listenerType = typeof(IListener);
+
+        var listenerImplementationTypes = listenerType
+            .Assembly
+            .GetTypes()
+            .Where(type => type.IsClass)
+            .Where(type => type.IsAbstract is false)
+            .Where(type => listenerType.IsAssignableFrom(type));
+
+        return listenerImplementationTypes
+            .Aggregate(serviceCollection, (reference, listenerImplementationType) =>
+                reference.AddSingleton(listenerType, listenerImplementationType))
             .AddDefaultAWSOptions(awsOptions)
             .Configure<InternalDiscordConfiguration>(configuration, "Discord")
             .Configure<Tables>(configuration, "Tables")
@@ -43,6 +56,7 @@ internal static class ServiceCollectionExtensions
             .AddSingleton<ICommandsPayloadGenerator, CommandsPayloadGenerator>()
             .AddSingleton<IInstanceIdHelper, InstanceIdHelper>()
             .AddSingleton<ICommandsPayloadGenerator, CommandsPayloadGenerator>()
+            .AddSingleton<IListenerRegistrar, ListenerRegistrar>()
             .AddAWSService<IAmazonCloudWatch>()
             .AddHttpClient()
             .AddHostedService<Listener>()
@@ -50,11 +64,11 @@ internal static class ServiceCollectionExtensions
             .AddSingleton<WebSocketProvider>(_ =>
             {
                 var webSocketProvider = DefaultWebSocketProvider.Create();
-        
+
                 return () =>
                 {
                     var defaultClient = webSocketProvider();
-            
+
                     return new TracedWebSocketClient(defaultClient);
                 };
             })
@@ -82,16 +96,16 @@ internal static class ServiceCollectionExtensions
                     .ConfigureHttpClient(client =>
                     {
                         client.DefaultRequestHeaders.AcceptEncoding.Clear();
-                        
+
                         AddEncodingCompression("gzip");
                         AddEncodingCompression("deflate");
-                        
+
                         return;
 
                         void AddEncodingCompression(string method)
                         {
                             var headerValue = StringWithQualityHeaderValue.Parse(method);
-                            
+
                             client.DefaultRequestHeaders.AcceptEncoding.Add(headerValue);
                         }
                     });
@@ -104,7 +118,7 @@ internal static class ServiceCollectionExtensions
                     Region = awsConfiguration.Region,
                     FlushTimeout = TimeSpan.FromSeconds(5),
                 };
-                
+
                 builder
                     .ClearProviders()
                     .AddConsole()

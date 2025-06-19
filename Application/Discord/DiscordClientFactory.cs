@@ -73,7 +73,6 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
         };
 
         await underlyingClient.LoginAsync(TokenType.Bot, token);
-        await client.StartAsync();
 
         return client;
     }
