@@ -1,31 +1,52 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
+using Amazon;
 using Amazon.CloudWatch;
-using Amazon.XRay.Recorder.Core;
-using Amazon.XRay.Recorder.Handlers.AwsSdk;
+using Amazon.Extensions.NETCore.Setup;
+using Amazon.SecretsManager;
 using Amazon.XRay.Recorder.Handlers.System.Net;
+using AWS.Logger;
 using Discord.Net.Rest;
 using Discord.Net.WebSockets;
 using KingmakerDiscordBot.Application.Configuration;
+using KingmakerDiscordBot.Application.Discord;
+using KingmakerDiscordBot.Application.Observability;
+using KingmakerDiscordBot.Application.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using InternalDiscordConfiguration = KingmakerDiscordBot.Application.Configuration.Discord; 
 
-namespace KingmakerDiscordBot.Application.Observability;
+namespace KingmakerDiscordBot.Application.General;
 
-internal static class ObservabilityExtensions
+internal static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddObservability(this IServiceCollection serviceCollection,
+    public static IServiceCollection RegisterAll(this IServiceCollection serviceCollection,
         IConfiguration configuration)
     {
-        AWSXRayRecorder.InitializeInstance(configuration);
-        AWSSDKHandler.RegisterXRayForAllServices();
+        var awsConfiguration = configuration.GetSection("AWS").Get<Aws>()!;
+        var region = RegionEndpoint.GetBySystemName(awsConfiguration.Region);
 
+        var awsOptions = new AWSOptions
+        {
+            Region = region
+        };
+        
         return serviceCollection
+            .AddDefaultAWSOptions(awsOptions)
+            .Configure<InternalDiscordConfiguration>(configuration, "Discord")
+            .Configure<Tables>(configuration, "Tables")
             .Configure<Heartbeat>(configuration, "Heartbeat")
-            .AddAWSService<IAmazonCloudWatch>()
-            .AddHostedService<CloudwatchHeartbeatService>()
+            .AddSingleton<IGuildRepository, GuildRepository>()
+            .AddSingleton<IAmazonSecretsManager, AmazonSecretsManagerClient>()
+            .AddSingleton<IDiscordClientFactory, DiscordClientFactory>()
+            .AddSingleton<ICommandsPayloadGenerator, CommandsPayloadGenerator>()
             .AddSingleton<IInstanceIdHelper, InstanceIdHelper>()
+            .AddSingleton<ICommandsPayloadGenerator, CommandsPayloadGenerator>()
+            .AddAWSService<IAmazonCloudWatch>()
             .AddHttpClient()
+            .AddHostedService<Listener>()
+            .AddHostedService<CloudwatchHeartbeatService>()
             .AddSingleton<WebSocketProvider>(_ =>
             {
                 var webSocketProvider = DefaultWebSocketProvider.Create();
@@ -74,6 +95,20 @@ internal static class ObservabilityExtensions
                             client.DefaultRequestHeaders.AcceptEncoding.Add(headerValue);
                         }
                     });
+            })
+            .AddLogging(builder =>
+            {
+                var loggerConfiguration = new AWSLoggerConfig
+                {
+                    LogGroup = awsConfiguration.LogGroup,
+                    Region = awsConfiguration.Region,
+                    FlushTimeout = TimeSpan.FromSeconds(5),
+                };
+                
+                builder
+                    .ClearProviders()
+                    .AddConsole()
+                    .AddAWSProvider(loggerConfiguration);
             });
     }
 }

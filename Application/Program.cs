@@ -1,4 +1,6 @@
 ﻿using System.Text.Json;
+using Amazon.XRay.Recorder.Core;
+using Amazon.XRay.Recorder.Handlers.AwsSdk;
 using KingmakerDiscordBot.Application.Configuration;
 using KingmakerDiscordBot.Application.Discord;
 using KingmakerDiscordBot.Application.General;
@@ -17,15 +19,14 @@ public static class Program
     {
         var configuration = ConfigurationFactory.Create(arguments);
         
+        AWSXRayRecorder.InitializeInstance(configuration);
+        AWSSDKHandler.RegisterXRayForAllServices();
+        
         await LogConfigurationAsync(configuration);
 
         using var host = Host
             .CreateDefaultBuilder(arguments)
-            .ConfigureServices(services => services
-                .AddAws(configuration)
-                .AddObservability(configuration)
-                .AddLogic(configuration)
-                .AddData(configuration))
+            .ConfigureServices(services => services.RegisterAll(configuration))
             .Build();
 
         await host.RunAsync();
