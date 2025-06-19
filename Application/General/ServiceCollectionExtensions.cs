@@ -2,6 +2,7 @@
 using System.Net.Http.Headers;
 using Amazon;
 using Amazon.CloudWatch;
+using Amazon.DynamoDBv2;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.SecretsManager;
 using Amazon.XRay.Recorder.Handlers.System.Net;
@@ -58,6 +59,7 @@ internal static class ServiceCollectionExtensions
             .AddSingleton<ICommandsPayloadGenerator, CommandsPayloadGenerator>()
             .AddSingleton<IListenerRegistrar, ListenerRegistrar>()
             .AddAWSService<IAmazonCloudWatch>()
+            .AddAWSService<IAmazonDynamoDB>()
             .AddHttpClient()
             .AddHostedService<Listener>()
             .AddHostedService<CloudwatchHeartbeatService>()
