@@ -36,6 +36,6 @@ public static class Program
     {
         await using var standardOutput = Console.OpenStandardOutput();
 
-        await JsonSerializer.SerializeAsync(standardOutput, configuration, PrettySerializationSettings.Instance);
+        await JsonSerializer.SerializeAsync(standardOutput, configuration, SerializationSettings.PrettySettingsInstance);
     }
 }
