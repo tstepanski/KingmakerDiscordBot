@@ -22,7 +22,10 @@ internal sealed class ApplicationAssetsStack : Stack
 
     private static void AddFilesToHasher(Hasher hasher, string artifactPath)
     {
-        foreach (var file in Directory.GetFiles(artifactPath)) hasher.AddFile(file);
+        foreach (var file in Directory.GetFiles(artifactPath))
+        {
+            hasher.AddFile(file);
+        }
     }
 
     private static Bucket CreateBucket(ApplicationAssetsStack stack)

@@ -24,7 +24,10 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
                 .Cast<T>()
                 .ToImmutableSortedSet();
 
-            if (all.IsEmpty) throw new InvalidOperationException($"{typeName} has no discernible values");
+            if (all.IsEmpty)
+            {
+                throw new InvalidOperationException($"{typeName} has no discernible values");
+            }
 
             return all;
         }, LazyThreadSafetyMode.ExecutionAndPublication);
@@ -77,7 +80,10 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
                 .GroupBy(T.ManyCommandPartition.ValueOfFunction)
                 .Select(group => CreatePartitionOption(group.Key, group));
 
-            foreach (var option in options) commandBuilder.AddOption(option);
+            foreach (var option in options)
+            {
+                commandBuilder.AddOption(option);
+            }
         }
 
         return commandBuilder.Build();
@@ -108,7 +114,10 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
             .WithRequired(true)
             .WithType(ApplicationCommandOptionType.String);
 
-        foreach (var reference in references) options.AddChoice(reference.Name, reference.Name);
+        foreach (var reference in references)
+        {
+            options.AddChoice(reference.Name, reference.Name);
+        }
 
         return options;
     }
@@ -129,7 +138,10 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
 
     public static bool TryParse(string? name, [NotNullWhen(true)] out T? value)
     {
-        if (name is not null) return ReferencesByName.Value.TryGetValue(name, out value);
+        if (name is not null)
+        {
+            return ReferencesByName.Value.TryGetValue(name, out value);
+        }
 
         value = null;
 

@@ -15,7 +15,10 @@ internal sealed class Listener(IDiscordClientFactory clientFactory,
 
         await client.StartAsync();
 
-        while (stoppingToken.IsCancellationRequested is false) await Task.Delay(oneMinute, stoppingToken);
+        while (stoppingToken.IsCancellationRequested is false)
+        {
+            await Task.Delay(oneMinute, stoppingToken);
+        }
 
         await client.StopAsync();
     }

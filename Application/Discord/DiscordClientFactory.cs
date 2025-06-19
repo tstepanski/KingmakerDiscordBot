@@ -20,7 +20,10 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
 
     public async Task<ISocketClientProxy> CreateAsync(CancellationToken cancellationToken)
     {
-        if (_cachedInstance is not null) return _cachedInstance;
+        if (_cachedInstance is not null)
+        {
+            return _cachedInstance;
+        }
 
         await _lock.WaitAsync(cancellationToken);
 

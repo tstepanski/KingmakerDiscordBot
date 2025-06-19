@@ -22,7 +22,9 @@ internal sealed class Hasher : IDisposable
         int bytesRead;
 
         while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
+        {
             _hasher.TransformBlock(buffer, 0, bytesRead, null, 0);
+        }
     }
 
     public override string ToString()
@@ -47,6 +49,9 @@ internal sealed class Hasher : IDisposable
 
     private void ThrowIfFinalized()
     {
-        if (_finalized) throw new InvalidOperationException("Hash already finalized");
+        if (_finalized)
+        {
+            throw new InvalidOperationException("Hash already finalized");
+        }
     }
 }

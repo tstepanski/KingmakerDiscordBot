@@ -12,7 +12,10 @@ public static class AttributeValueExtensions
     public static DateTime? DateTimeOrDefault(this Dictionary<string, AttributeValue> attributeValues,
         string attributeName)
     {
-        if (attributeValues.TryGetValue(attributeName, out var attributeValue)) return attributeValue.DateTime();
+        if (attributeValues.TryGetValue(attributeName, out var attributeValue))
+        {
+            return attributeValue.DateTime();
+        }
 
         return null;
     }

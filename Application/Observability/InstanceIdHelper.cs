@@ -11,7 +11,10 @@ internal sealed class InstanceIdHelper(HttpClient httpClient, ILogger<InstanceId
 
     public async Task<string> GetIdAsync(CancellationToken cancellationToken)
     {
-        if (_cachedInstanceId is not null) return _cachedInstanceId;
+        if (_cachedInstanceId is not null)
+        {
+            return _cachedInstanceId;
+        }
 
         await _lock.WaitAsync(cancellationToken);
 

@@ -15,7 +15,9 @@ internal sealed class GuildAvailabilityListener(IGuildRepository repository,
         var knownCommandsHash = await repository.GetKnownCommandsHashAsync(guildAvailableEvent.Id, cancellationToken);
 
         if (knownCommandsHash != commandsPayloadGenerator.CurrentHashCode)
+        {
             await RefreshCommandsAsync(client, guildAvailableEvent, cancellationToken);
+        }
     }
 
     public async Task OnJoinedGuild(IDiscordRestClientProxy client, SocketGuild guildJoinedEvent,

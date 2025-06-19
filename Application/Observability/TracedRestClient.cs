@@ -52,7 +52,10 @@ internal sealed class TracedRestClient(string baseUrl, HttpClient client) : IRes
     {
         client.DefaultRequestHeaders.Remove(key);
 
-        if (value is not null) client.DefaultRequestHeaders.Add(key, value);
+        if (value is not null)
+        {
+            client.DefaultRequestHeaders.Add(key, value);
+        }
     }
 
     public void SetCancelToken(CancellationToken cancelToken)
@@ -96,11 +99,18 @@ internal sealed class TracedRestClient(string baseUrl, HttpClient client) : IRes
         var httpMethod = GetMethod(method);
         var restRequest = new HttpRequestMessage(httpMethod, uri);
 
-        if (reason is not null) restRequest.Headers.Add("X-Audit-Log-Reason", Uri.EscapeDataString(reason));
+        if (reason is not null)
+        {
+            restRequest.Headers.Add("X-Audit-Log-Reason", Uri.EscapeDataString(reason));
+        }
 
         if (requestHeaders is not null)
+        {
             foreach (var header in requestHeaders)
+            {
                 restRequest.Headers.Add(header.Key, header.Value);
+            }
+        }
 
         restRequest.Content = content;
 
@@ -120,9 +130,13 @@ internal sealed class TracedRestClient(string baseUrl, HttpClient client) : IRes
     {
         var content = new MultipartFormDataContent($"Upload----{Guid.NewGuid():N}");
 
-        if (parameters is null) return content;
+        if (parameters is null)
+        {
+            return content;
+        }
 
         foreach (var (key, value) in parameters)
+        {
             switch (value)
             {
                 case null:
@@ -161,7 +175,10 @@ internal sealed class TracedRestClient(string baseUrl, HttpClient client) : IRes
                     var fileName = FileNamePropertyReader(value);
                     var streamContent = CreateStreamContent(stream);
 
-                    if (contentType != null) streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                    if (contentType != null)
+                    {
+                        streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                    }
 
                     content.Add(streamContent, key, fileName);
 
@@ -170,13 +187,17 @@ internal sealed class TracedRestClient(string baseUrl, HttpClient client) : IRes
                 default:
                     throw new InvalidOperationException($"Unsupported param type \"{value.GetType().Name}\".");
             }
+        }
 
         return content;
     }
 
     private static StreamContent CreateStreamContent(Stream stream)
     {
-        if (stream.CanSeek) stream.Position = 0;
+        if (stream.CanSeek)
+        {
+            stream.Position = 0;
+        }
 
         return new StreamContent(stream);
     }

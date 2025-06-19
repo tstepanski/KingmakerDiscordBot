@@ -16,8 +16,12 @@ internal sealed class OptionalJsonConverter<T> : JsonConverter<Optional<T>>
     public override void Write(Utf8JsonWriter writer, Optional<T> value, JsonSerializerOptions options)
     {
         if (value.IsSpecified)
+        {
             JsonSerializer.Serialize(writer, value.Value, options);
+        }
         else
+        {
             writer.WriteNullValue();
+        }
     }
 }
