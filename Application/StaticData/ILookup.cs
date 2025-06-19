@@ -9,6 +9,8 @@ internal interface ILookup<T> : ISourcedInformation<T>
     
     static abstract string TypePrettyName { get; }
 
+    static virtual ManyCommandPartition<T>? ManyCommandPartition { get; } = null;
+
     static abstract T FromName(string name);
     
     static abstract IEnumerable<T> GetAll();

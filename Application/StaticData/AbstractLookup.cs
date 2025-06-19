@@ -9,35 +9,41 @@ namespace KingmakerDiscordBot.Application.StaticData;
 internal abstract class AbstractLookup<T>(string name, string description, Source source, ushort page) :
     ISourcedInformation<T> where T : AbstractLookup<T>, ILookup<T>
 {
-    private static readonly Type ThisType = typeof(T);
-
     // ReSharper disable StaticMemberInGenericType
-    private static readonly string TypeName = ThisType.Name;
+    private static readonly Lazy<ImmutableSortedSet<T>> All;
 
-    private static readonly ImmutableSortedSet<T> All = ThisType
-        .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
-        .Where(field => field.IsInitOnly)
-        .Where(field => field.FieldType == ThisType)
-        .Select(field => field.GetValue(null))
-        .Cast<T>()
-        .ToImmutableSortedSet();
-
-    private static readonly ImmutableSortedDictionary<string, T> ReferencesByName =
-        All.ToImmutableSortedDictionary(reference => reference.Name, reference => reference,
-            StringComparer.OrdinalIgnoreCase);
+    private static readonly Lazy<ImmutableSortedDictionary<string, T>> ReferencesByName;
     // ReSharper restore StaticMemberInGenericType
 
     static AbstractLookup()
     {
-        if (All.IsEmpty)
+        var thisType = typeof(T);
+        var typeName = thisType.Name;
+
+        All = new Lazy<ImmutableSortedSet<T>>(() =>
         {
-            throw new InvalidOperationException($"{TypeName} has no discernible values");
-        }
-        
-        if (All.Count > 25)
-        {
-            throw new InvalidOperationException($"{TypeName} has more than 25 values");
-        }
+            var all = thisType
+                .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Where(field => field.IsInitOnly)
+                .Where(field => field.FieldType == thisType)
+                .Select(field => field.GetValue(null))
+                .Cast<T>()
+                .ToImmutableSortedSet();
+
+            if (all.IsEmpty)
+            {
+                throw new InvalidOperationException($"{typeName} has no discernible values");
+            }
+
+            return all;
+        }, LazyThreadSafetyMode.ExecutionAndPublication);
+
+        ReferencesByName = new Lazy<ImmutableSortedDictionary<string, T>>(() =>
+            All.Value.ToImmutableSortedDictionary(reference => reference.Name, reference => reference,
+                StringComparer.OrdinalIgnoreCase), LazyThreadSafetyMode.ExecutionAndPublication);
+
+        TypeCommandName = typeName.Commandify();
+        TypePrettyName = typeName.Prettify();
     }
 
     public string Name { get; } = name;
@@ -49,12 +55,59 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
     public ushort Page { get; } = page;
 
     // ReSharper disable StaticMemberInGenericType
-    public static string TypeCommandName { get; } = TypeName.Commandify();
+    public static string TypeCommandName { get; }
 
-    public static string TypePrettyName { get; } = TypeName.Prettify();
+    public static string TypePrettyName { get; }
     // ReSharper restore StaticMemberInGenericType
 
     public static SlashCommandProperties SetupSlashCommand()
+    {
+        var commandBuilder = new SlashCommandBuilder()
+            .WithName($"describe-{TypeCommandName}")
+            .WithDescription($"Describes a specific {TypePrettyName.ToLower()}")
+            .WithContextTypes(InteractionContextType.Guild)
+            .WithIntegrationTypes(ApplicationIntegrationType.GuildInstall);
+        
+        if (T.ManyCommandPartition is null)
+        {
+            var options = CreateOptions(All.Value);
+            
+            commandBuilder.AddOption(options);
+        }
+        else
+        {
+            var options = All
+                .Value
+                .GroupBy(T.ManyCommandPartition.ValueOfFunction)
+                .Select(group => CreatePartitionOption(group.Key, group));
+
+            foreach (var option in options)
+            {
+                commandBuilder.AddOption(option);
+            }
+        }
+        
+        return commandBuilder.Build();
+    }
+
+    private static SlashCommandOptionBuilder CreatePartitionOption(string partitionKey,
+        IEnumerable<T> references)
+    {
+        var commandName = partitionKey.Commandify();
+        
+        var subCommand = new SlashCommandOptionBuilder()
+            .WithName(commandName)
+            .WithDescription($"Describe a {partitionKey.ToLower()} {TypePrettyName.ToLower()}")
+            .WithType(ApplicationCommandOptionType.SubCommand);
+
+        var options = CreateOptions(references);
+
+        subCommand.AddOption(options);
+
+        return subCommand;
+    }
+
+    private static SlashCommandOptionBuilder CreateOptions(IEnumerable<T> references)
     {
         var options = new SlashCommandOptionBuilder()
             .WithName(TypeCommandName)
@@ -62,18 +115,12 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
             .WithRequired(true)
             .WithType(ApplicationCommandOptionType.String);
         
-        foreach (var reference in All)
+        foreach (var reference in references)
         {
             options.AddChoice(reference.Name, reference.Name);
         }
 
-        return new SlashCommandBuilder()
-            .WithName($"describe-{TypeCommandName}")
-            .WithDescription($"Describes a specific {TypePrettyName.ToLower()}")
-            .WithContextTypes(InteractionContextType.Guild)
-            .WithIntegrationTypes(ApplicationIntegrationType.GuildInstall)
-            .AddOption(options)
-            .Build();
+        return options;
     }
 
     public bool Equals(T? other)
@@ -93,14 +140,14 @@ internal abstract class AbstractLookup<T>(string name, string description, Sourc
 
     public static IEnumerable<T> GetAll()
     {
-        return All;
+        return All.Value;
     }
 
     public static bool TryParse(string? name, [NotNullWhen(true)] out T? value)
     {
         if (name is not null)
         {
-            return ReferencesByName.TryGetValue(name, out value);
+            return ReferencesByName.Value.TryGetValue(name, out value);
         }
 
         value = null;

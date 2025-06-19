@@ -244,9 +244,11 @@ internal sealed class SkillAction : AbstractLookup<SkillAction>, ILookup<SkillAc
         "Lose 1d4 Food commodities to spoilage. If you have no Food to lose, you instead gain 1 Unrest.", 530,
         Trait.Downtime, Trait.Region);
 
-    private static readonly ImmutableSortedDictionary<Skill, ImmutableSortedSet<SkillAction>> ActionsBySkill = GetAll()
-        .GroupBy(action => action.RelatedSkill)
-        .ToImmutableSortedDictionary(actions => actions.Key, actions => actions.ToImmutableSortedSet());
+    private static readonly Lazy<ImmutableSortedDictionary<Skill, ImmutableSortedSet<SkillAction>>> ActionsBySkill =
+        new(() => GetAll()
+                .GroupBy(action => action.RelatedSkill)
+                .ToImmutableSortedDictionary(actions => actions.Key, actions => actions.ToImmutableSortedSet()),
+            LazyThreadSafetyMode.ExecutionAndPublication);
 
     private SkillAction(string name, string description, Skill relatedSkill, bool trained, string? requirements,
         string criticalSuccess, string success, string failure, string criticalFailure, ushort page,
@@ -298,6 +300,12 @@ internal sealed class SkillAction : AbstractLookup<SkillAction>, ILookup<SkillAc
 
     public static IEnumerable<SkillAction> GetAllBySkill(Skill skill)
     {
-        return ActionsBySkill.GetValueOrDefault(skill, ImmutableSortedSet<SkillAction>.Empty);
+        return ActionsBySkill.Value.GetValueOrDefault(skill, ImmutableSortedSet<SkillAction>.Empty);
     }
+
+    public static ManyCommandPartition<SkillAction>? ManyCommandPartition { get; } = new()
+    {
+        Name = "Related Skill",
+        ValueOfFunction = action => action.RelatedSkill.Name
+    };
 }
