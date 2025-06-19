@@ -25,6 +25,7 @@ write_files:
       HEARTBEAT__INTERVALINSECONDS={{ HEARTBEAT_INTERVAL_IN_SECONDS }}
       HEARTBEAT__METRICNAME={{ HEARTBEAT_METRIC_NAME }}
       HEARTBEAT__NAMESPACE={{ HEARTBEAT_NAMESPACE }}
+      TABLES__GUILD={{ GUILD_TABLE_NAME }}
 
   - path: /etc/amazon/amazon-cloudwatch-agent.json
     content: |

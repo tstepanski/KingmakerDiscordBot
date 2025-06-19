@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography;
+using System.Text;
 
 namespace KingmakerDiscordBot.CDK;
 
@@ -10,6 +11,13 @@ internal sealed class Hasher : IDisposable
     public void Dispose()
     {
         _hasher.Dispose();
+    }
+
+    public void AddRaw(string data)
+    {
+        var bytes = Encoding.UTF8.GetBytes(data);
+
+        _hasher.TransformBlock(bytes, 0, bytes.Length, null, 0);
     }
 
     public void AddFile(string path)

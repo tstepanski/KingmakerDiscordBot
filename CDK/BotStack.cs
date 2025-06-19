@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Amazon.CDK;
 using Amazon.CDK.AWS.AutoScaling;
 using Amazon.CDK.AWS.CloudWatch;
+using Amazon.CDK.AWS.DynamoDB;
 using Amazon.CDK.AWS.EC2;
 using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.Logs;
@@ -15,16 +16,17 @@ internal sealed partial class BotStack : Stack
 {
     private static readonly Regex TokenRegex = TokenRegexFactory();
 
-    public BotStack(App application, IBucket bucket, IVpc vpc, ISecurityGroup securityGroup, Hasher hasher) :
-        base(application, nameof(BotStack))
+    public BotStack(App application, IBucket bucket, IVpc vpc, ISecurityGroup securityGroup, ITableV2 table,
+        Hasher hasher) : base(application, nameof(BotStack))
     {
         var logGroup = CreateLogGroup(this);
         var role = CreateRole(this);
         var tokenSecret = LookupTokenSecret(this);
-        var userData = CreateUserData(this, bucket, logGroup, tokenSecret, hasher);
+        var userData = CreateUserData(this, bucket, logGroup, tokenSecret, table, hasher);
         var launchTemplate = CreateLaunchTemplate(this, role, securityGroup, userData, hasher);
 
         bucket.GrantRead(role);
+        table.GrantReadWriteData(role);
         tokenSecret.GrantRead(role);
 
         _ = CreateAutoScalingGroup(this, launchTemplate, vpc);
@@ -32,19 +34,19 @@ internal sealed partial class BotStack : Stack
     }
 
     private static UserData CreateUserData(BotStack stack, IBucket bucket, LogGroup logGroup, ISecret tokenSecret,
-        Hasher hasher)
+        ITableV2 table, Hasher hasher)
     {
         var region = stack.GetContextOrThrow(Constants.AwsRegion);
         var location = Assembly.GetExecutingAssembly().Location;
         var directory = Directory.GetParent(location);
         var path = Path.Join(directory!.FullName, "user-data.yml");
 
-        hasher.AddFile(path);
-
         var userData = File.ReadAllText(path);
 
         userData = TokenRegex.Replace(userData,
-            match => GetTokenReplacement(match.Groups[1].Value, bucket, region, tokenSecret, logGroup));
+            match => GetTokenReplacement(match.Groups[1].Value, bucket, region, tokenSecret, logGroup, table));
+
+        hasher.AddRaw(userData);
 
         return UserData.Custom(userData);
     }
@@ -122,12 +124,13 @@ internal sealed partial class BotStack : Stack
     }
 
     private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret,
-        LogGroup logGroup)
+        LogGroup logGroup, ITableV2 table)
     {
         return token switch
         {
             "BUCKET" => bucket.BucketName,
             "DISCORD_TOKEN_ARN" => tokenSecret.SecretFullArn!,
+            "GUILD_TABLE_NAME" => table.TableArn,
             "HEARTBEAT_INSTANCE_DIMENSION_NAME" => Constants.HeartbeatInstanceDimensionName,
             "HEARTBEAT_INTERVAL_IN_SECONDS" => Constants.HeartbeatIntervalInSeconds.ToString(),
             "HEARTBEAT_METRIC_NAME" => Constants.HeartbeatMetricName,
