@@ -4,5 +4,7 @@ internal interface IGuildRepository
 {
     Task CreateNew(ulong guildId, CancellationToken cancellationToken);
     
-    Task<DateTime?> GetCommandsLastUpdatedOnAsync(ulong guildId, CancellationToken cancellationToken);
+    Task<string?> GetKnownCommandsHashAsync(ulong guildId, CancellationToken cancellationToken);
+
+    Task UpdateKnownCommandsHashAsync(ulong guildId, string knownCommandsHash, CancellationToken cancellationToken);
 }
