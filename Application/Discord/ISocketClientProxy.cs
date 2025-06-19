@@ -7,6 +7,8 @@ namespace KingmakerDiscordBot.Application.Discord;
 
 internal interface ISocketClientProxy : IDiscordClient
 {
+    IDiscordRestClientProxy Rest { get; }
+    
     event Func<Task> Connected;
     
     event Func<Task> Ready;
