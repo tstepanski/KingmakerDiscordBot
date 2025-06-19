@@ -1,6 +1,3 @@
 ﻿namespace KingmakerDiscordBot.Application.Listeners.Contracts;
 
-internal interface IListener
-{
-    
-}
+internal interface IListener;
