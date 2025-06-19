@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using Discord;
+using KingmakerDiscordBot.Application.General;
 using KingmakerDiscordBot.Application.StaticData;
 
 namespace KingmakerDiscordBot.Application.Discord;
@@ -10,14 +11,14 @@ internal sealed class CommandsPayloadGenerator : ICommandsPayloadGenerator
 {
     private static readonly ImmutableArray<SlashCommandProperties> Commands =
     [
-        ..CalculateAllCommands().OrderBy(command => command.Name)
+        ..CalculateAllCommands().OrderBy(command => command.Name.Value)
     ];
 
     public CommandsPayloadGenerator()
     {
         using var memory = new MemoryStream();
 
-        JsonSerializer.Serialize(memory, Commands);
+        JsonSerializer.Serialize(memory, Commands, SerializationSettings.CompressSettingsInstance);
 
         memory.Position = 0;
 
