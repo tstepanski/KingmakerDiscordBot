@@ -3,11 +3,13 @@ using Discord.WebSocket;
 using KingmakerDiscordBot.Application.Discord;
 using KingmakerDiscordBot.Application.Listeners.Contracts;
 using KingmakerDiscordBot.Application.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace KingmakerDiscordBot.Application.Listeners;
 
 internal sealed class GuildAvailabilityListener(IGuildRepository repository,
-    ICommandsPayloadGenerator commandsPayloadGenerator) : IJoinedGuildListener, IGuildAvailableListener
+    ICommandsPayloadGenerator commandsPayloadGenerator, ILogger<GuildAvailabilityListener> logger) :
+    IJoinedGuildListener, IGuildAvailableListener
 {
     public async Task OnGuildAvailable(IDiscordRestClientProxy client, SocketGuild guildAvailableEvent,
         CancellationToken cancellationToken)
@@ -16,6 +18,8 @@ internal sealed class GuildAvailabilityListener(IGuildRepository repository,
 
         if (knownCommandsHash != commandsPayloadGenerator.CurrentHashCode)
         {
+            logger.LogInformation("Updating commands for guild: {guildId}", guildAvailableEvent.Id);
+            
             await RefreshCommandsAsync(client, guildAvailableEvent, cancellationToken);
         }
     }
@@ -24,6 +28,8 @@ internal sealed class GuildAvailabilityListener(IGuildRepository repository,
         CancellationToken cancellationToken)
     {
         await repository.CreateNew(guildJoinedEvent.Id, cancellationToken);
+        
+        logger.LogInformation("New guild made available: {guildId}", guildJoinedEvent.Id);
 
         await RefreshCommandsAsync(client, guildJoinedEvent, cancellationToken);
     }
