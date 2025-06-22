@@ -4,45 +4,62 @@ using System.Text.Json;
 using Discord;
 using KingmakerDiscordBot.Application.General;
 using KingmakerDiscordBot.Application.StaticData;
+using KingmakerDiscordBot.Application.StaticData.Commands;
 
 namespace KingmakerDiscordBot.Application.Discord;
 
 internal sealed class CommandsPayloadGenerator : ICommandsPayloadGenerator
 {
-    private static readonly ImmutableArray<SlashCommandProperties> Commands =
-    [
-        ..CalculateAllCommands().OrderBy(command => command.Name.Value)
-    ];
+    private readonly ImmutableArray<SlashCommandProperties> _commands;
+    private readonly ImmutableArray<IDescribeCommandHandler> _describeCommandHandlers;
 
-    public CommandsPayloadGenerator()
+    public CommandsPayloadGenerator(IDescribeCommandWithHandlerFactory describeCommandWithHandlerFactory)
     {
+        var commandsList = new List<SlashCommandProperties>();
+        var describeCommandHandlers = new List<IDescribeCommandHandler>();
+        
+        Add<Ability>();
+        Add<Charter>();
+        Add<Feat>();
+        Add<Government>();
+        Add<Heartland>();
+        Add<Skill>();
+        Add<SkillAction>();
+        Add<Trait>();
+
+        _commands = [..commandsList];
+        _describeCommandHandlers = [..describeCommandHandlers];
+
         using var memory = new MemoryStream();
 
-        JsonSerializer.Serialize(memory, Commands, SerializationSettings.CompressSettingsInstance);
+        JsonSerializer.Serialize(memory, _commands, SerializationSettings.CompressSettingsInstance);
 
         memory.Position = 0;
 
         var hashBytes = SHA256.HashData(memory);
 
         CurrentHashCode = Convert.ToBase64String(hashBytes);
+
+        return;
+
+        void Add<T>() where T : ILookup<T>
+        {
+            var (command, handler) = describeCommandWithHandlerFactory.Create<T>();
+        
+            commandsList.Add(command);
+            describeCommandHandlers.Add(handler);
+        }
     }
 
     public string CurrentHashCode { get; }
 
     public IEnumerable<SlashCommandProperties> GetAllCommands()
     {
-        return Commands;
+        return _commands;
     }
 
-    private static IEnumerable<SlashCommandProperties> CalculateAllCommands()
+    public IEnumerable<IDescribeCommandHandler> GetAllDescribeCommandHandlers()
     {
-        yield return Ability.SetupSlashCommand();
-        yield return Charter.SetupSlashCommand();
-        yield return Feat.SetupSlashCommand();
-        yield return Government.SetupSlashCommand();
-        yield return Heartland.SetupSlashCommand();
-        yield return Skill.SetupSlashCommand();
-        yield return SkillAction.SetupSlashCommand();
-        yield return Trait.SetupSlashCommand();
+        return _describeCommandHandlers;
     }
 }
