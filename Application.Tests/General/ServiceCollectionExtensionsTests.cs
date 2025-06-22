@@ -45,6 +45,6 @@ public sealed class ServiceCollectionExtensionsTests
             .GetServices<IListener>()
             .Count();
 
-        Assert.Equal(1, result);
+        Assert.Equal(2, result);
     }
 }

@@ -15,6 +15,7 @@ using KingmakerDiscordBot.Application.Listeners;
 using KingmakerDiscordBot.Application.Listeners.Contracts;
 using KingmakerDiscordBot.Application.Observability;
 using KingmakerDiscordBot.Application.Repositories;
+using KingmakerDiscordBot.Application.StaticData.Commands;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -58,6 +59,8 @@ internal static class ServiceCollectionExtensions
             .AddSingleton<IInstanceIdHelper, InstanceIdHelper>()
             .AddSingleton<ICommandsPayloadGenerator, CommandsPayloadGenerator>()
             .AddSingleton<IListenerRegistrar, ListenerRegistrar>()
+            .AddSingleton<IAbstractEmbedFactory, AbstractEmbedFactory>()
+            .AddSingleton<IDescribeCommandWithHandlerFactory, DescribeCommandWithHandlerFactory>()
             .AddAWSService<IAmazonCloudWatch>()
             .AddAWSService<IAmazonDynamoDB>()
             .AddHttpClient()
