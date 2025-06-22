@@ -1,7 +1,9 @@
-﻿using KingmakerDiscordBot.Application.General;
+﻿using Amazon.DynamoDBv2;
+using KingmakerDiscordBot.Application.General;
 using KingmakerDiscordBot.Application.Listeners.Contracts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
 namespace KingmakerDiscordBot.Application.Tests.General;
 
@@ -39,6 +41,7 @@ public sealed class ServiceCollectionExtensionsTests
 
         var serviceProvider = new ServiceCollection()
             .RegisterAll(configuration)
+            .AddSingleton<IAmazonDynamoDB>(_ => new Mock<IAmazonDynamoDB>().Object)
             .BuildServiceProvider();
 
         var result = serviceProvider

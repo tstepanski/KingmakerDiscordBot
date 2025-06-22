@@ -28,14 +28,6 @@ internal static class ServiceCollectionExtensions
     public static IServiceCollection RegisterAll(this IServiceCollection serviceCollection,
         IConfiguration configuration)
     {
-        var awsConfiguration = configuration.GetSection("AWS").Get<Aws>()!;
-        var region = RegionEndpoint.GetBySystemName(awsConfiguration.Region);
-
-        var awsOptions = new AWSOptions
-        {
-            Region = region
-        };
-
         var listenerType = typeof(IListener);
 
         var listenerImplementationTypes = listenerType
@@ -48,7 +40,6 @@ internal static class ServiceCollectionExtensions
         return listenerImplementationTypes
             .Aggregate(serviceCollection, (reference, listenerImplementationType) =>
                 reference.AddSingleton(listenerType, listenerImplementationType))
-            .AddDefaultAWSOptions(awsOptions)
             .Configure<InternalDiscordConfiguration>(configuration, "Discord")
             .Configure<Tables>(configuration, "Tables")
             .Configure<Heartbeat>(configuration, "Heartbeat")
@@ -61,9 +52,8 @@ internal static class ServiceCollectionExtensions
             .AddSingleton<IListenerRegistrar, ListenerRegistrar>()
             .AddSingleton<IAbstractEmbedFactory, AbstractEmbedFactory>()
             .AddSingleton<IDescribeCommandWithHandlerFactory, DescribeCommandWithHandlerFactory>()
-            .AddAWSService<IAmazonCloudWatch>()
-            .AddAWSService<IAmazonDynamoDB>()
             .AddHttpClient()
+            .AddLogging()
             .AddHostedService<Listener>()
             .AddHostedService<CloudwatchHeartbeatService>()
             .AddSingleton<WebSocketProvider>(_ =>
@@ -114,7 +104,24 @@ internal static class ServiceCollectionExtensions
                             client.DefaultRequestHeaders.AcceptEncoding.Add(headerValue);
                         }
                     });
-            })
+            });
+    }
+
+    public static IServiceCollection AddAws(this IServiceCollection serviceCollection, IConfiguration configuration)
+    {
+        
+        var awsConfiguration = configuration.GetSection("AWS").Get<Aws>()!;
+        var region = RegionEndpoint.GetBySystemName(awsConfiguration.Region);
+
+        var awsOptions = new AWSOptions
+        {
+            Region = region
+        };
+
+        return serviceCollection
+            .AddDefaultAWSOptions(awsOptions)
+            .AddAWSService<IAmazonCloudWatch>()
+            .AddAWSService<IAmazonDynamoDB>()
             .AddLogging(builder =>
             {
                 var loggerConfiguration = new AWSLoggerConfig

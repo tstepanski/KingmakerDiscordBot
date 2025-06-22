@@ -23,7 +23,9 @@ public static class Program
 
         using var host = Host
             .CreateDefaultBuilder(arguments)
-            .ConfigureServices(services => services.RegisterAll(configuration))
+            .ConfigureServices(services => services
+                .RegisterAll(configuration)
+                .AddAws(configuration))
             .Build();
 
         await host.RunAsync();
