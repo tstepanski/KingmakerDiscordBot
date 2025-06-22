@@ -14,7 +14,7 @@ public static class Program
         var databaseStack = new DatabaseStack(application);
 
         _ = new BotStack(application, applicationAssetsStack.Bucket, vpcStack.Vpc, vpcStack.SecurityGroup, 
-            databaseStack.Table, hasher);
+            databaseStack.GuildsTable, hasher);
 
         var synthesis = application.Synth();
 

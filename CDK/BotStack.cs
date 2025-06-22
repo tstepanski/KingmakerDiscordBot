@@ -16,17 +16,17 @@ internal sealed partial class BotStack : Stack
 {
     private static readonly Regex TokenRegex = TokenRegexFactory();
 
-    public BotStack(App application, IBucket bucket, IVpc vpc, ISecurityGroup securityGroup, ITableV2 table,
+    public BotStack(App application, IBucket bucket, IVpc vpc, ISecurityGroup securityGroup, ITableV2 guildsTable,
         Hasher hasher) : base(application, nameof(BotStack))
     {
         var logGroup = CreateLogGroup(this);
         var role = CreateRole(this);
         var tokenSecret = LookupTokenSecret(this);
-        var userData = CreateUserData(this, bucket, logGroup, tokenSecret, table, hasher);
+        var userData = CreateUserData(this, bucket, logGroup, tokenSecret, guildsTable, hasher);
         var launchTemplate = CreateLaunchTemplate(this, role, securityGroup, userData, hasher);
 
         bucket.GrantRead(role);
-        table.GrantReadWriteData(role);
+        guildsTable.GrantReadWriteData(role);
         tokenSecret.GrantRead(role);
 
         _ = CreateAutoScalingGroup(this, launchTemplate, vpc);
@@ -34,7 +34,7 @@ internal sealed partial class BotStack : Stack
     }
 
     private static UserData CreateUserData(BotStack stack, IBucket bucket, LogGroup logGroup, ISecret tokenSecret,
-        ITableV2 table, Hasher hasher)
+        ITableV2 guildsTable, Hasher hasher)
     {
         var region = stack.GetContextOrThrow(Constants.AwsRegion);
         var location = Assembly.GetExecutingAssembly().Location;
@@ -44,7 +44,7 @@ internal sealed partial class BotStack : Stack
         var userData = File.ReadAllText(path);
 
         userData = TokenRegex.Replace(userData,
-            match => GetTokenReplacement(match.Groups[1].Value, bucket, region, tokenSecret, logGroup, table));
+            match => GetTokenReplacement(match.Groups[1].Value, bucket, region, tokenSecret, logGroup, guildsTable));
 
         hasher.AddRaw(userData);
 
@@ -124,13 +124,13 @@ internal sealed partial class BotStack : Stack
     }
 
     private static string GetTokenReplacement(string token, IBucket bucket, string region, ISecret tokenSecret,
-        LogGroup logGroup, ITableV2 table)
+        LogGroup logGroup, ITableV2 guildsTable)
     {
         return token switch
         {
             "BUCKET" => bucket.BucketName,
             "DISCORD_TOKEN_ARN" => tokenSecret.SecretFullArn!,
-            "GUILD_TABLE_NAME" => table.TableArn,
+            "GUILD_TABLE_NAME" => guildsTable.TableArn,
             "HEARTBEAT_INSTANCE_DIMENSION_NAME" => Constants.HeartbeatInstanceDimensionName,
             "HEARTBEAT_INTERVAL_IN_SECONDS" => Constants.HeartbeatIntervalInSeconds.ToString(),
             "HEARTBEAT_METRIC_NAME" => Constants.HeartbeatMetricName,

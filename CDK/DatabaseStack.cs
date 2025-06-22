@@ -28,11 +28,11 @@ internal sealed class DatabaseStack : Stack
             PartitionKey = partitionKey,
             RemovalPolicy = RemovalPolicy.RETAIN,
             TableClass = TableClass.STANDARD,
-            TableName = Constants.BotName
+            TableName = $"{Constants.BotName}-guilds"
         };
 
-        Table = new TableV2(this, nameof(TableV2), properties);
+        GuildsTable = new TableV2(this, nameof(TableV2), properties);
     }
 
-    public ITableV2 Table { get; }
+    public ITableV2 GuildsTable { get; }
 }
