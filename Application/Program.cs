@@ -14,6 +14,13 @@ public static class Program
 
     public static async Task Main(string[] arguments)
     {
+        using var host = await CreateHost(arguments);
+
+        await host.RunAsync();
+    }
+
+    private static async Task<IHost> CreateHost(string[] arguments)
+    {
         var configuration = ConfigurationFactory.Create(arguments);
 
         AWSXRayRecorder.InitializeInstance(configuration);
@@ -21,14 +28,14 @@ public static class Program
 
         await LogConfigurationAsync(configuration);
 
-        using var host = Host
-            .CreateDefaultBuilder(arguments)
-            .ConfigureServices(services => services
-                .RegisterAll(configuration)
-                .AddAws(configuration))
-            .Build();
+        var builder = Host.CreateApplicationBuilder(arguments);
 
-        await host.RunAsync();
+        builder
+            .Services
+            .RegisterAll(configuration)
+            .AddAws(configuration);
+
+        return builder.Build();
     }
 
     private static async Task LogConfigurationAsync(IConfiguration configuration)
