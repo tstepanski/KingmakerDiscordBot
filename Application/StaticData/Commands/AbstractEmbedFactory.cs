@@ -75,10 +75,9 @@ internal sealed class AbstractEmbedFactory : IAbstractEmbedFactory
             .Append(build);
 
         var block = Expression.Block([builderVariable], expressions);
-
-        return Expression
-            .Lambda<Func<T, Embed>>(block, parameter)
-            .Compile();
+        var expressionFunction = Expression.Lambda<Func<T, Embed>>(block, parameter);
+        
+        return expressionFunction.Compile();
     }
 
     private static MethodCallExpression AddSimpleSet(ParameterExpression parameter, ParameterExpression builderVariable,
@@ -125,6 +124,12 @@ internal sealed class AbstractEmbedFactory : IAbstractEmbedFactory
 
     public static string Join(IEnumerable enumerable)
     {
-        return string.Join(", ", enumerable);
+        var valuesAsStrings = enumerable
+            .Cast<object?>()
+            .Select(value => value?.ToString())
+            .OfType<string>()
+            .ToImmutableArray();
+
+        return string.Join(", ", valuesAsStrings);
     }
 }
