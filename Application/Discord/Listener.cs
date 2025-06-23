@@ -1,6 +1,4 @@
 ﻿using KingmakerDiscordBot.Application.Listeners;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace KingmakerDiscordBot.Application.Discord;
 
