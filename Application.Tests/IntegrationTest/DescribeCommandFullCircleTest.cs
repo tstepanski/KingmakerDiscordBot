@@ -2,6 +2,7 @@
 using KingmakerDiscordBot.Application.Discord;
 using KingmakerDiscordBot.Application.Listeners;
 using KingmakerDiscordBot.Application.StaticData.Commands;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace KingmakerDiscordBot.Application.Tests.IntegrationTest;
@@ -14,7 +15,8 @@ public sealed class DescribeCommandFullCircleTest
         var abstractEmbedFactory = new AbstractEmbedFactory();
         var describeCommandWithHandlerFactory = new DescribeCommandWithHandlerFactory(abstractEmbedFactory);
         var commandsPayloadGenerator = new CommandsPayloadGenerator(describeCommandWithHandlerFactory);
-        var describeCommandListener = new DescribeCommandListener(commandsPayloadGenerator);
+        var loggerMock = new Mock<ILogger<DescribeCommandListener>>();
+        var describeCommandListener = new DescribeCommandListener(commandsPayloadGenerator, loggerMock.Object);
         var restClientMock = new Mock<IDiscordRestClientProxy>();
         var commandMock = new Mock<ISlashCommandInteraction>();
         var interactionDataMock = new Mock<IApplicationCommandInteractionData>();
