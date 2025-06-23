@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Text.Json;
 using Discord;
 using Discord.WebSocket;
 using KingmakerDiscordBot.Application.Discord;
@@ -7,8 +8,8 @@ using KingmakerDiscordBot.Application.StaticData.Commands;
 
 namespace KingmakerDiscordBot.Application.Listeners;
 
-internal sealed class DescribeCommandListener(ICommandsPayloadGenerator commandsPayloadGenerator)
-    : ISlashCommandExecutedListener
+internal sealed class DescribeCommandListener(ICommandsPayloadGenerator commandsPayloadGenerator, 
+    ILogger<DescribeCommandListener> logger) : ISlashCommandExecutedListener
 {
     private readonly ImmutableSortedDictionary<string, IDescribeCommandHandler> _describeCommandHandlers =
         commandsPayloadGenerator
@@ -18,22 +19,33 @@ internal sealed class DescribeCommandListener(ICommandsPayloadGenerator commands
     public async Task OnSlashCommandExecuted(IDiscordRestClientProxy _, ISlashCommandInteraction command,
         CancellationToken cancellationToken = default)
     {
-        var commandName = command.Data.Name;
-
-        if (commandName.StartsWith("describe-") is false)
+        try
         {
-            return;
+            var commandName = command.Data.Name;
+            var json = JsonSerializer.Serialize(command.Data);
+
+            logger.LogInformation("Received {commandName} command from {guildId}: '{payload}'", commandName,
+                command.GuildId, json);
+
+            if (commandName.StartsWith("describe-") is false)
+            {
+                return;
+            }
+
+            var handler = _describeCommandHandlers[commandName];
+            var response = handler.GetResponse(command.Data.Options);
+
+            var requestOptions = new RequestOptions
+            {
+                CancelToken = cancellationToken
+            };
+
+            await command.RespondAsync(embed: response, options: requestOptions);
         }
-
-        var handler = _describeCommandHandlers[commandName];
-        var response = handler.GetResponse(command.Data.Options);
-
-        var requestOptions = new RequestOptions
+        catch (Exception exception)
         {
-            CancelToken = cancellationToken
-        };
-        
-        await command.RespondAsync(embed: response, options:requestOptions);
+            logger.LogError(exception, "Failed to process command");
+        }
     }
 
     Task ISlashCommandExecutedListener.OnSlashCommandExecuted(IDiscordRestClientProxy client, 
