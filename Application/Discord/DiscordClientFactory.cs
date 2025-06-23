@@ -58,8 +58,8 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
 
         var discordConfiguration = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildIntegrations,
-            LogGatewayIntentWarnings = false,
+            GatewayIntents = GatewayIntents.AllUnprivileged,
+            LogGatewayIntentWarnings = true,
             LogLevel = LogSeverity.Warning,
             RestClientProvider = restClientProvider,
             WebSocketProvider = webSocketProvider
