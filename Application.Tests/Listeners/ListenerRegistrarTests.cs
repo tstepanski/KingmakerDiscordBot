@@ -2,6 +2,7 @@
 using KingmakerDiscordBot.Application.Discord;
 using KingmakerDiscordBot.Application.Listeners;
 using KingmakerDiscordBot.Application.Listeners.Contracts;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace KingmakerDiscordBot.Application.Tests.Listeners;
@@ -12,8 +13,9 @@ public sealed class ListenerRegistrarTests
     public async Task RegisterAll_GivenGuildAvailabilityListener_CorrectlyAttachesInvokeMethod()
     {
         var socketClientProxyMock = new Mock<ISocketClientProxy>();
+        var loggerMock = new Mock<ILogger<ListenerRegistrar>>();
         var fakeListener = new FakeGuildAvailabilityListener();
-        var registrar = new ListenerRegistrar([fakeListener]);
+        var registrar = new ListenerRegistrar([fakeListener], loggerMock.Object);
         
         registrar.RegisterAll(socketClientProxyMock.Object, CancellationToken.None);
 
