@@ -5,7 +5,6 @@ using Discord.Net.Rest;
 using Discord.Net.WebSockets;
 using Discord.WebSocket;
 using KingmakerDiscordBot.Application.Observability;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using InternalDiscordConfiguration = KingmakerDiscordBot.Application.Configuration.Discord;
 

@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using KingmakerDiscordBot.Application.Discord;
 using KingmakerDiscordBot.Application.Listeners.Contracts;
-using Microsoft.Extensions.Logging;
 
 namespace KingmakerDiscordBot.Application.Listeners;
 

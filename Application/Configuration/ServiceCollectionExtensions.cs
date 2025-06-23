@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-
 namespace KingmakerDiscordBot.Application.Configuration;
 
 internal static class ServiceCollectionExtensions

@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-
-namespace KingmakerDiscordBot.Application.Configuration;
+﻿namespace KingmakerDiscordBot.Application.Configuration;
 
 internal interface IConfigurationFactory
 {

@@ -3,8 +3,6 @@ using Amazon.XRay.Recorder.Core;
 using Amazon.XRay.Recorder.Handlers.AwsSdk;
 using KingmakerDiscordBot.Application.Configuration;
 using KingmakerDiscordBot.Application.General;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 
 namespace KingmakerDiscordBot.Application;
 

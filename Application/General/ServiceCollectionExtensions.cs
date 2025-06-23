@@ -16,9 +16,6 @@ using KingmakerDiscordBot.Application.Listeners.Contracts;
 using KingmakerDiscordBot.Application.Observability;
 using KingmakerDiscordBot.Application.Repositories;
 using KingmakerDiscordBot.Application.StaticData.Commands;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using InternalDiscordConfiguration = KingmakerDiscordBot.Application.Configuration.Discord;
 
 namespace KingmakerDiscordBot.Application.General;

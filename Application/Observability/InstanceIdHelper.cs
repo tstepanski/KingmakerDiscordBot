@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace KingmakerDiscordBot.Application.Observability;
+﻿namespace KingmakerDiscordBot.Application.Observability;
 
 internal sealed class InstanceIdHelper(HttpClient httpClient, ILogger<InstanceIdHelper> logger) : IInstanceIdHelper
 {

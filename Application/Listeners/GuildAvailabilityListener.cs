@@ -3,7 +3,6 @@ using Discord.WebSocket;
 using KingmakerDiscordBot.Application.Discord;
 using KingmakerDiscordBot.Application.Listeners.Contracts;
 using KingmakerDiscordBot.Application.Repositories;
-using Microsoft.Extensions.Logging;
 
 namespace KingmakerDiscordBot.Application.Listeners;
 
