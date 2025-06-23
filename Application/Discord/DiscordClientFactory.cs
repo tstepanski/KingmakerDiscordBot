@@ -12,7 +12,7 @@ namespace KingmakerDiscordBot.Application.Discord;
 
 internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, RestClientProvider restClientProvider,
     IAmazonSecretsManager secretsManager, IOptions<InternalDiscordConfiguration> configuration,
-    ILogger<DiscordSocketClient> logger) : IDiscordClientFactory, IDisposable
+    ILogger<DiscordSocketClient> factoryLogger, ILogger discordNetLogger) : IDiscordClientFactory, IDisposable
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
     private ISocketClientProxy? _cachedInstance;
@@ -30,7 +30,7 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
         {
             _cachedInstance ??= await CreateNewAsync(cancellationToken);
 
-            logger.LogInformation("Created new discord client");
+            factoryLogger.LogInformation("Created new discord client");
 
             return _cachedInstance;
         }
@@ -68,11 +68,11 @@ internal sealed class DiscordClientFactory(WebSocketProvider webSocketProvider, 
         var underlyingClient = new DiscordSocketClient(discordConfiguration);
         var client = new SocketClientProxy(underlyingClient);
 
-        client.Log += logger.Log;
+        client.Log += discordNetLogger.Log;
 
         client.Ready += () =>
         {
-            logger.LogInformation("Client ready");
+            factoryLogger.LogInformation("Client ready");
 
             return Task.CompletedTask;
         };
