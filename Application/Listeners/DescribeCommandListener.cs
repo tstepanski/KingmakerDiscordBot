@@ -9,7 +9,7 @@ using KingmakerDiscordBot.Application.StaticData.Commands;
 namespace KingmakerDiscordBot.Application.Listeners;
 
 internal sealed class DescribeCommandListener(ICommandsPayloadGenerator commandsPayloadGenerator, 
-    ILogger<DescribeCommandListener> logger) : ISlashCommandExecutedListener
+    ILogger<DescribeCommandListener> logger) : ISlashCommandExecutedListener, IInteractionCreatedListener
 {
     private readonly ImmutableSortedDictionary<string, IDescribeCommandHandler> _describeCommandHandlers =
         commandsPayloadGenerator
@@ -52,5 +52,16 @@ internal sealed class DescribeCommandListener(ICommandsPayloadGenerator commands
         SocketSlashCommand socketSlashCommand, CancellationToken cancellationToken)
     {
         return OnSlashCommandExecuted(client, socketSlashCommand, cancellationToken);
+    }
+
+    async Task IInteractionCreatedListener.OnInteractionCreated(IDiscordRestClientProxy client, 
+        SocketInteraction socketInteraction, CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Received interaction: {name}", socketInteraction.Type);
+        
+        if (socketInteraction is ISlashCommandInteraction command)
+        {
+            await OnSlashCommandExecuted(client, command, cancellationToken);
+        }
     }
 }
